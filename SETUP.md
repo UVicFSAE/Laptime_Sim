@@ -1,4 +1,4 @@
-# General Testing Scripts
+# Setting Up venv for Laptime_Sim
 - This repository contains all scripts used in UVFR's Laptime Sim. 
 - In order to make all scripts run deterministically on different computers, this repository makes use of a **virtual environment**.
 
