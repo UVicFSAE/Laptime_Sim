@@ -22,7 +22,6 @@ echo Installing packages..
 echo --------------------------------------
 .venv\Scripts\pip install -r requirements.txt
 echo --------------------------------------
-
 :: PTH:
 
 echo Creating .pth file in .venv\Lib\site-packages (so relative path imports work)...
