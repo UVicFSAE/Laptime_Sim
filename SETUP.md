@@ -73,5 +73,4 @@ If PyCharm does not detect the virtual environment automatically:
     - The PyPi website (https://pypi.org/) might be a useful resource for choosing among versions. 
 3. Add the package to the requirements.txt file
    - Run `pip freeze` to get the current installed version, then add that to the requirements.txt
-   - For zaber packages, don't specify a version, so we always get the latest
 4. Commit any changes to requirements.txt to GIT
