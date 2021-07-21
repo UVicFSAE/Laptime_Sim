@@ -8,6 +8,7 @@ This file contains the tire model classes and their functions for the calculatio
 Created 2021, Contributors: Nigel Swab
 """
 import numpy as np
+from dataclasses import dataclass
 
 from lib.pyqt_helper import Dialogs
 
@@ -15,179 +16,23 @@ from lib.pyqt_helper import Dialogs
 class PacejkaMf61:
     
     def __init__(self, filename):
-        # Initializations
-        self.FNOMIN: float = 0.0
-        self.NOMPRES: float = 0.0
-        self.UNLOADED_RADIUS: float = 0.0
 
-        # General Scaling Factors
-        self.LFZ0: float = 0.0
-        self.LCX: float = 0.0
-        self.LMUX: float = 0.0
-        self.LEX: float = 0.0
-        self.LKX: float = 0.0
-        self.LHX: float = 0.0
-        self.LVX: float = 0.0
-        self.LCY: float = 0.0
-        self.LMUY: float = 0.0
-        self.LEY: float = 0.0
-        self.LKY: float = 0.0
-        self.LHY: float = 0.0
-        self.LVY: float = 0.0
-        self.LTR: float = 0.0
-        self.LRES: float = 0.0
-        self.LXAL: float = 0.0
-        self.LYKA: float = 0.0
-        self.LVYK: float = 0.0
-        self.LS: float = 0.0
-        self.LKYC: float = 0.0
-        self.LKZ: float = 0.0
-        self.LMU: float = 0.0
-        self.LMX: float = 0.0
-        self.LMY: float = 0.0
-        self.LVMX: float = 0.0
-
-        # Longitudinal Coefficients
-        self.PCX1: float = 0.0
-        self.PDX1: float = 0.0
-        self.PDX2: float = 0.0
-        self.PDX3: float = 0.0
-        self.PEX1: float = 0.0
-        self.PEX2: float = 0.0
-        self.PEX3: float = 0.0
-        self.PEX4: float = 0.0
-        self.PKX1: float = 0.0
-        self.PKX2: float = 0.0
-        self.PKX3: float = 0.0
-        self.PHX1: float = 0.0
-        self.PHX2: float = 0.0
-        self.PVX1: float = 0.0
-        self.PVX2: float = 0.0
-        self.PPX1: float = 0.0
-        self.PPX2: float = 0.0
-        self.PPX3: float = 0.0
-        self.PPX4: float = 0.0
-        self.RBX1: float = 0.0
-        self.RBX2: float = 0.0
-        self.RBX3: float = 0.0
-        self.RCX1: float = 0.0
-        self.REX1: float = 0.0
-        self.REX2: float = 0.0
-        self.RHX1: float = 0.0
-
-        # Overturning Coefficients
-        self.SX1: float = 0.0
-        self.QSX2: float = 0.0
-        self.QSX3: float = 0.0
-        self.QSX4: float = 0.0
-        self.QSX5: float = 0.0
-        self.QSX6: float = 0.0
-        self.QSX7: float = 0.0
-        self.QSX8: float = 0.0
-        self.QSX9: float = 0.0
-        self.QSX10: float = 0.0
-        self.QSX11: float = 0.0
-        self.QSX12: float = 0.0
-        self.QSX13: float = 0.0
-        self.QSX14: float = 0.0
-        self.QPMX1: float = 0.0
-
-        # Lateral Coefficients
-        self.PCY1: float = 0.0
-        self.PDY1: float = 0.0
-        self.PDY2: float = 0.0
-        self.PDY3: float = 0.0
-        self.PEY1: float = 0.0
-        self.PEY2: float = 0.0
-        self.PEY3: float = 0.0
-        self.PEY4: float = 0.0
-        self.PEY5: float = 0.0
-        self.PKY1: float = 0.0
-        self.PKY2: float = 0.0
-        self.PKY3: float = 0.0
-        self.PKY4: float = 0.0
-        self.PKY5: float = 0.0
-        self.PKY6: float = 0.0
-        self.PKY7: float = 0.0
-        self.PHY1: float = 0.0
-        self.PHY2: float = 0.0
-        self.PVY1: float = 0.0
-        self.PVY2: float = 0.0
-        self.PVY3: float = 0.0
-        self.PVY4: float = 0.0
-        self.PPY1: float = 0.0
-        self.PPY2: float = 0.0
-        self.PPY3: float = 0.0
-        self.PPY4: float = 0.0
-        self.PPY5: float = 0.0
-        self.RBY1: float = 0.0
-        self.RBY2: float = 0.0
-        self.RBY3: float = 0.0
-        self.RBY4: float = 0.0
-        self.RCY1: float = 0.0
-        self.REY1: float = 0.0
-        self.REY2: float = 0.0
-        self.RHY1: float = 0.0
-        self.RHY2: float = 0.0
-        self.RVY1: float = 0.0
-        self.RVY2: float = 0.0
-        self.RVY3: float = 0.0
-        self.RVY4: float = 0.0
-        self.RVY5: float = 0.0
-        self.RVY6: float = 0.0
-
-        # Aligning Moment Coefficients
-        self.QBZ1: float = 0.0
-        self.QBZ2: float = 0.0
-        self.QBZ3: float = 0.0
-        self.QBZ4: float = 0.0
-        self.QBZ5: float = 0.0
-        self.QBZ6: float = 0.0
-        self.QBZ9: float = 0.0
-        self.QBZ10: float = 0.0
-        self.QCZ1: float = 0.0
-        self.QDZ1: float = 0.0
-        self.QDZ2: float = 0.0
-        self.QDZ3: float = 0.0
-        self.QDZ4: float = 0.0
-        self.QDZ6: float = 0.0
-        self.QDZ7: float = 0.0
-        self.QDZ8: float = 0.0
-        self.QDZ9: float = 0.0
-        self.QDZ10: float = 0.0
-        self.QDZ11: float = 0.0
-        self.QEZ1: float = 0.0
-        self.QEZ2: float = 0.0
-        self.QEZ3: float = 0.0
-        self.QEZ4: float = 0.0
-        self.QEZ5: float = 0.0
-        self.QHZ1: float = 0.0
-        self.QHZ2: float = 0.0
-        self.QHZ3: float = 0.0
-        self.QHZ4: float = 0.0
-        self.PPZ1: float = 0.0
-        self.PPZ2: float = 0.0
-        self.SSZ1: float = 0.0
-        self.SSZ2: float = 0.0
-        self.SSZ3: float = 0.0
-        self.SSZ4: float = 0.0
-
-        # List of parameters to pull from .TIR files
-        self.list_of_model_info = []
-        self.list_of_constraints = []
-        self.list_of_coefficients = []
-
-        # Dictionaries to store tire model data
-        self.model_info = dict()
-        self.constraints = dict()
-        self.coefficient_descriptions = dict()
-
-        # Load tire model data
-        self._load_tire_model_metadata(self)
-        self._load_tire_model(self, filename)
+        # # List of parameters to pull from .TIR files
+        # self.list_of_model_info = []
+        # self.list_of_constraints = []
+        # self.list_of_coefficients = []
+        #
+        # # Dictionaries to store tire model data
+        # self.model_info = dict()
+        # self.constraints = dict()
+        # self.coefficient_descriptions = dict()
+        #
+        # # Load tire model data
+        # self._load_tire_model_metadata(self)
+        # self._load_tire_model(self, filename)
 
         # Initializations
-        self.Fz0 = self.FNOMIN * self.LFZ0
+        self.coeffs.Fz0 = self.coeffs.FNOMIN * self.coeffs.LFZ0
 
     def f_y(self, alpha, kappa, gamma, Fz, tire_pressure):
         """
@@ -196,44 +41,44 @@ class PacejkaMf61:
         """
 
         # Initializations
-        dfz = (Fz - self.Fz0) / self.Fz0
-        dpi = (tire_pressure - self.NOMPRES) / self.NOMPRES
+        dfz = (Fz - self.coeffs.Fz0) / self.coeffs.Fz0
+        dpi = (tire_pressure - self.coeffs.NOMPRES) / self.coeffs.NOMPRES
 
         # Pure slip
-        SVyg = Fz * (self.PVY3 + self.PVY4 * dfz) * gamma * self.LKY * self.LMUY
-        SVy0 = Fz * (self.PVY1 + self.PVY2 * dfz) * self.LVY * self.LMUY
+        SVyg = Fz * (self.coeffs.PVY3 + self.coeffs.PVY4 * dfz) * gamma * self.coeffs.LKY * self.coeffs.LMUY
+        SVy0 = Fz * (self.coeffs.PVY1 + self.coeffs.PVY2 * dfz) * self.coeffs.LVY * self.coeffs.LMUY
         SVy = SVy0 + SVyg
-        Kyg = (self.PKY6 + self.PKY7 * dfz) * (1 + self.PPY5 * dpi) * Fz * self.LKYC
-        Kya = (1 - self.PKY3 * abs(gamma)) * self.PKY1 * self.Fz0 * (1 + self.PPY1 * dpi) * \
-               np.sin(self.PKY4 * np.arctan(Fz / ((self.PKY2 + self.PKY5 * gamma ** 2)
-                                                  * (1 + self.PPY2 * dpi) * self.Fz0))) * self.LKY
-        SHy0 = (self.PHY1 + self.PHY2 * dfz) * self.LHY
+        Kyg = (self.coeffs.PKY6 + self.coeffs.PKY7 * dfz) * (1 + self.coeffs.PPY5 * dpi) * Fz * self.coeffs.LKYC
+        Kya = (1 - self.coeffs.PKY3 * abs(gamma)) * self.coeffs.PKY1 * self.coeffs.Fz0 * (1 + self.coeffs.PPY1 * dpi) * \
+               np.sin(self.coeffs.PKY4 * np.arctan(Fz / ((self.coeffs.PKY2 + self.coeffs.PKY5 * np.power(gamma, 2))
+                                                  * (1 + self.coeffs.PPY2 * dpi) * self.coeffs.Fz0))) * self.coeffs.LKY
+        SHy0 = (self.coeffs.PHY1 + self.coeffs.PHY2 * dfz) * self.coeffs.LHY
         SHyg = (Kyg * gamma - SVyg) / Kya
         SHy = SHy0 + SHyg
         alpha_y = alpha + SHy
-        Ey = (self.PEY1 + self.PEY2 * dfz) * \
-             (1 + self.PEY5 * gamma**2 - (self.PEY3 + self.PEY4 * gamma) * np.sign(alpha_y)) * self.LEY
-        Mewy = (self.PDY1 + self.PDY2 * dfz) * (1 - self.PDY3 * gamma ** 2) * \
-               (1 + self.PPY3 * dpi + self.PPY4 * dpi ** 2) * self.LMUY
+        Ey = (self.coeffs.PEY1 + self.coeffs.PEY2 * dfz) * \
+             (1 + self.coeffs.PEY5 * np.power(gamma, 2) - (self.coeffs.PEY3 + self.coeffs.PEY4 * gamma) * np.sign(alpha_y)) * self.coeffs.LEY
+        Mewy = (self.coeffs.PDY1 + self.coeffs.PDY2 * dfz) * (1 - self.coeffs.PDY3 * np.power(gamma, 2)) * \
+               (1 + self.coeffs.PPY3 * dpi + self.coeffs.PPY4 * np.power(gamma, 2)) * self.coeffs.LMUY
         Dy = Mewy * Fz
-        Cy = self.PCY1 * self.LCY
+        Cy = self.coeffs.PCY1 * self.coeffs.LCY
         By = Kya / (Cy * Dy)
         SVyk = 0
         Gyk = 1
 
         # Combined Slip (if there is a slip ratio
         if kappa:
-            SHyk = self.RHY1 + self.RHY2 * dfz
-            Eyk = self.REY1 + self.REY2 * dfz
-            Cyk = self.RCY1
-            Byk = (self.RBY1 + self.RBY4 * gamma ** 2) * \
-                  np.cos( np.arctan(self.RBY2 * (alpha - self.RBY3))) * self.LYKA
+            SHyk = self.coeffs.RHY1 + self.coeffs.RHY2 * dfz
+            Eyk = self.coeffs.REY1 + self.coeffs.REY2 * dfz
+            Cyk = self.coeffs.RCY1
+            Byk = (self.coeffs.RBY1 + self.coeffs.RBY4 * np.power(gamma, 2)) * \
+                  np.cos( np.arctan(self.coeffs.RBY2 * (alpha - self.coeffs.RBY3))) * self.coeffs.LYKA
             kappa_s = kappa + SHyk
             Gyk = (np.cos(Cyk * np.arctan(Byk * kappa_s - Eyk * (Byk * kappa_s - np.arctan(Byk * kappa_s))))) / \
                   (np.cos(Cyk * np.arctan(Byk * SHyk - Eyk * (Byk * SHyk - np.arctan(Byk * SHyk)))))
-            DVyk = Mewy * Fz * (self.RVY1 + self.RVY2 * dfz + self.RVY3 * gamma) * \
-                   np.cos(np.arctan(self.RVY4 * alpha))
-            SVyk = DVyk * np.sin(self.RVY5 * np.arctan(self.RVY6)) * self.LVYK
+            DVyk = Mewy * Fz * (self.coeffs.RVY1 + self.coeffs.RVY2 * dfz + self.coeffs.RVY3 * gamma) * \
+                   np.cos(np.arctan(self.coeffs.RVY4 * alpha))
+            SVyk = DVyk * np.sin(self.coeffs.RVY5 * np.arctan(self.coeffs.RVY6)) * self.coeffs.LVYK
 
         # Pure Lateral Force
         Fyp = Dy * np.sin(Cy * np.arctan(By * alpha_y - Ey * (By * alpha_y - np.arctan(By * alpha_y)))) + SVy
@@ -249,30 +94,30 @@ class PacejkaMf61:
         """
 
         # Initializations
-        dfz = (Fz - self.Fz0) / self.Fz0
-        dpi = (tire_pressure - self.NOMPRES) / self.NOMPRES
+        dfz = (Fz - self.coeffs.Fz0) / self.coeffs.Fz0
+        dpi = (tire_pressure - self.coeffs.NOMPRES) / self.coeffs.NOMPRES
 
         # Pure Slip
-        SVx = (self.PVX1 + self.PVX2 * dfz) * Fz * self.LVX * self.LMUX
-        SHx = (self.PHX1 + self.PHX2 * dfz) * self.LHX
+        SVx = (self.coeffs.PVX1 + self.coeffs.PVX2 * dfz) * Fz * self.coeffs.LVX * self.coeffs.LMUX
+        SHx = (self.coeffs.PHX1 + self.coeffs.PHX2 * dfz) * self.coeffs.LHX
         kappa_x = kappa + SHx
-        Kxk = (self.PKX1 + self.PKX2 * dfz) * np.exp(self.PKX3 * dfz) * \
-              (1 + self.PPX1 * dpi + self.PPX2 * dpi ** 2) * Fz * self.LKX
-        Ex = (self.PEX1 + self.PEX2 * dfz + self.PEX3 * dfz ** 2) * \
-             (1 - self.PEX4 * np.sign(kappa_x)) * self.LEX
-        Mewx = (self.PDX1 + self.PDX2 * dfz) * (1 - self.PDX3 * gamma ** 2) * \
-               (1 + self.PPX3 * dpi + self.PPX4 * dpi ** 2) * Fz * self.LMUX
+        Kxk = (self.coeffs.PKX1 + self.coeffs.PKX2 * dfz) * np.exp(self.coeffs.PKX3 * dfz) * \
+              (1 + self.coeffs.PPX1 * dpi + self.coeffs.PPX2 * np.power(gamma, 2)) * Fz * self.coeffs.LKX
+        Ex = (self.coeffs.PEX1 + self.coeffs.PEX2 * dfz + self.coeffs.PEX3 * np.power(gamma, 2)) * \
+             (1 - self.coeffs.PEX4 * np.sign(kappa_x)) * self.coeffs.LEX
+        Mewx = (self.coeffs.PDX1 + self.coeffs.PDX2 * dfz) * (1 - self.coeffs.PDX3 * np.power(gamma, 2)) * \
+               (1 + self.coeffs.PPX3 * dpi + self.coeffs.PPX4 * np.power(gamma, 2)) * Fz * self.coeffs.LMUX
         Dx = Mewx * Fz
-        Cx = self.PCX1 * self.LCX
+        Cx = self.coeffs.PCX1 * self.coeffs.LCX
         Bx = Kxk / (Cx * Dx)
         Gxa = 1
 
         # Combined Slip
         if alpha:
-            SHxa = self.RHX1
-            Exa = self.REX1 + self.REX2 * dfz
-            Cxa = self.RCX1
-            Bxa = (self.RBX1 + self.RBX3 * gamma ** 2) * np.cos(np.arctan(self.RBX2 * kappa)) * self.LXAL
+            SHxa = self.coeffs.RHX1
+            Exa = self.coeffs.REX1 + self.coeffs.REX2 * dfz
+            Cxa = self.coeffs.RCX1
+            Bxa = (self.coeffs.RBX1 + self.coeffs.RBX3 * np.power(gamma, 2)) * np.cos(np.arctan(self.coeffs.RBX2 * kappa)) * self.coeffs.LXAL
             alpha_s = alpha + SHxa
             Gxa = (np.cos(Cxa * np.arctan(Bxa * alpha_s - Exa * (Bxa * alpha_s - np.arctan(Bxa * alpha_s))))) / \
                   (np.cos(Cxa * np.arctan(Bxa * SHxa - Exa * (Bxa * SHxa - np.arctan(Bxa * SHxa)))))
@@ -288,16 +133,14 @@ class PacejkaMf61:
         """
 
         # Initializations
-        dfz = (Fz - self.Fz0) / self.Fz0
-        dpi = (tire_pressure - self.NOMPRES) / self.NOMPRES
-
-
+        dfz = (Fz - self.coeffs.Fz0) / self.coeffs.Fz0
+        dpi = (tire_pressure - self.coeffs.NOMPRES) / self.coeffs.NOMPRES
 
         # Residual Moment (Mzr)
-        Dr = ((self.QDZ6 + self.QDZ7 * dfz) * self.LRES + (self.QDZ8 + self.QDZ9 * dfz) *
-              (1 - self.PPZ2 * dpi) * gamma * self.LKZ + (self.QDZ10 + self.QDZ11 * dfz) *
-              gamma * np.abs(gamma) * self.LKZ) * Fz * self.UNLOADED_RADIUS * self.LMUY
-        Br = self.QBZ9 * self.LKY / self.LMUY + self.QBZ10 * By * Cy
+        Dr = ((self.coeffs.QDZ6 + self.coeffs.QDZ7 * dfz) * self.coeffs.LRES + (self.coeffs.QDZ8 + self.coeffs.QDZ9 * dfz) *
+              (1 - self.coeffs.PPZ2 * dpi) * gamma * self.coeffs.LKZ + (self.coeffs.QDZ10 + self.coeffs.QDZ11 * dfz) *
+              gamma * np.abs(gamma) * self.coeffs.LKZ) * Fz * self.coeffs.UNLOADED_RADIUS * self.coeffs.LMUY
+        Br = self.coeffs.QBZ9 * self.coeffs.LKY / self.coeffs.LMUY + self.coeffs.QBZ10 * By * Cy
         Mzr = Dr * np.cos(np.arctan(Br * alpha_req)) * np.cos(alpha_M)
 
     
@@ -365,6 +208,185 @@ class PacejkaMf61:
                                      'QDZ6', 'QDZ7', 'QDZ8', 'QDZ9', 'QDZ10', 'QDZ11', 'QEZ1', 'QEZ2', 'QEZ3',
                                      'QEZ4', 'QEZ5', 'QHZ1', 'QHZ2', 'QHZ3', 'QHZ4', 'PPZ1', 'PPZ2', 'SSZ1',
                                      'SSZ2', 'SSZ3', 'SSZ4']
+
+
+@dataclass
+class Mf61:
+    __slots__ = ['FNOMIN', 'UNLOADED_RADIUS', 'LONGVL', 'NOMPRES', 'LFZ0', 'LCX', 'LMUX',
+                 'LEX', 'LKX', 'LHX', 'LVX', 'LCY', 'LMUY', 'LEY', 'LKY', 'LHY', 'LVY',
+                 'LTR', 'LRES', 'LXAL', 'LYKA', 'LVYKA', 'LS', 'LKYC', 'LKZC', 'LMUV', 'LMX',
+                 'LMY', 'LVMX', 'PCX1', 'PDX1', 'PDX2', 'PDX3', 'PEX1', 'PEX2', 'PEX3',
+                 'PEX4', 'PKX1', 'PKX2', 'PKX3', 'PHX1', 'PHX2', 'PVX1', 'PVX2', 'PPX1',
+                 'PPX2', 'PPX3', 'PPX4', 'RBX1', 'RBX2', 'RBX3', 'RCX1', 'REX1', 'REX2',
+                 'RHX1', 'QSX1', 'QSX2', 'QSX3', 'QSX4', 'QSX5', 'QSX6', 'QSX7', 'QSX8',
+                 'QSX9', 'QSX10', 'QSX11', 'QSX12', 'QSX13', 'QSX14', 'QPMX1', 'PCY1',
+                 'PDY1', 'PDY2', 'PDY3', 'PEY1', 'PEY2', 'PEY3', 'PEY4', 'PEY5', 'PKY1',
+                 'PKY2', 'PKY3', 'PKY4', 'PKY5', 'PKY6', 'PKY7', 'PHY1', 'PHY2', 'PVY1',
+                 'PVY2', 'PVY3', 'PVY4', 'PPY1', 'PPY2', 'PPY3', 'PPY4', 'PPY5', 'RBY1',
+                 'RBY2', 'RBY3', 'RBY4', 'RCY1', 'REY1', 'REY2', 'RHY1', 'RHY2', 'RVY1',
+                 'RVY2', 'RVY3', 'RVY4', 'RVY5', 'RVY6', 'QBZ1', 'QBZ2', 'QBZ3', 'QBZ4',
+                 'QBZ5', 'QBZ6', 'QBZ9', 'QBZ10', 'QCZ1', 'QDZ1', 'QDZ2', 'QDZ3', 'QDZ4',
+                 'QDZ6', 'QDZ7', 'QDZ8', 'QDZ9', 'QDZ10', 'QDZ11', 'QEZ1', 'QEZ2', 'QEZ3',
+                 'QEZ4', 'QEZ5', 'QHZ1', 'QHZ2', 'QHZ3', 'QHZ4', 'PPZ1', 'PPZ2', 'SSZ1',
+                 'SSZ2', 'SSZ3', 'SSZ4', 'FITTYP', 'WIDTH', 'ASPECT_RATIO', 'VERTICAL_STIFFNESS',
+                 'PRESMIN', 'PRESMAX', 'KPUMIN', 'KPUMAX', 'APLMIN', 'ALPMAX', 'CAMMIN', 'CAMMAX']
+
+    # Initializations
+    FNOMIN: float
+    NOMPRES: float
+    UNLOADED_RADIUS: float
+
+    # General Scaling Factors
+    LFZ0: float
+    LCX: float
+    LMUX: float
+    LEX: float
+    LKX: float
+    LHX: float
+    LVX: float
+    LCY: float
+    LMUY: float
+    LEY: float
+    LKY: float
+    LHY: float
+    LVY: float
+    LTR: float
+    LRES: float
+    LXAL: float
+    LYKA: float
+    LVYK: float
+    LS: float
+    LKYC: float
+    LKZ: float
+    LMU: float
+    LMX: float
+    LMY: float
+    LVMX: float
+
+    # Longitudinal Coefficients
+    PCX1: float
+    PDX1: float
+    PDX2: float
+    PDX3: float
+    PEX1: float
+    PEX2: float
+    PEX3: float
+    PEX4: float
+    PKX1: float
+    PKX2: float
+    PKX3: float
+    PHX1: float
+    PHX2: float
+    PVX1: float
+    PVX2: float
+    PPX1: float
+    PPX2: float
+    PPX3: float
+    PPX4: float
+    RBX1: float
+    RBX2: float
+    RBX3: float
+    RCX1: float
+    REX1: float
+    REX2: float
+    RHX1: float
+
+    # Overturning Coefficients
+    SX1: float
+    QSX2: float
+    QSX3: float
+    QSX4: float
+    QSX5: float
+    QSX6: float
+    QSX7: float
+    QSX8: float
+    QSX9: float
+    QSX10: float
+    QSX11: float
+    QSX12: float
+    QSX13: float
+    QSX14: float
+    QPMX1: float
+
+    # Lateral Coefficients
+    PCY1: float
+    PDY1: float
+    PDY2: float
+    PDY3: float
+    PEY1: float
+    PEY2: float
+    PEY3: float
+    PEY4: float
+    PEY5: float
+    PKY1: float
+    PKY2: float
+    PKY3: float
+    PKY4: float
+    PKY5: float
+    PKY6: float
+    PKY7: float
+    PHY1: float
+    PHY2: float
+    PVY1: float
+    PVY2: float
+    PVY3: float
+    PVY4: float
+    PPY1: float
+    PPY2: float
+    PPY3: float
+    PPY4: float
+    PPY5: float
+    RBY1: float
+    RBY2: float
+    RBY3: float
+    RBY4: float
+    RCY1: float
+    REY1: float
+    REY2: float
+    RHY1: float
+    RHY2: float
+    RVY1: float
+    RVY2: float
+    RVY3: float
+    RVY4: float
+    RVY5: float
+    RVY6: float
+
+    # Aligning Moment Coefficients
+    QBZ1: float
+    QBZ2: float
+    QBZ3: float
+    QBZ4: float
+    QBZ5: float
+    QBZ6: float
+    QBZ9: float
+    QBZ10: float
+    QCZ1: float
+    QDZ1: float
+    QDZ2: float
+    QDZ3: float
+    QDZ4: float
+    QDZ6: float
+    QDZ7: float
+    QDZ8: float
+    QDZ9: float
+    QDZ10: float
+    QDZ11: float
+    QEZ1: float
+    QEZ2: float
+    QEZ3: float
+    QEZ4: float
+    QEZ5: float
+    QHZ1: float
+    QHZ2: float
+    QHZ3: float
+    QHZ4: float
+    PPZ1: float
+    PPZ2: float
+    SSZ1: float
+    SSZ2: float
+    SSZ3: float
+    SSZ4: float
 
 
 if __name__ == "__main__":
