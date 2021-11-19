@@ -50,7 +50,7 @@ PyCharm has built-in support for virtual environments.
    - It will print the python version, which should be 3.9.x.
 
 If PyCharm does not detect the virtual environment automatically:
-1. In PyCharm, go to "File" -> "Settings" -> "Project: general_testing_scripts" -> "Python Interpreter"
+1. In PyCharm, go to "File" -> "Settings" -> "Project: Laptime_Sim" -> "Python Interpreter"
 2. In the "Python Interpreter" dropdown menu:
    - If the virtual environment interpreter is present, select that one.
    - If it is NOT present: 
