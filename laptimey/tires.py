@@ -14,15 +14,18 @@ Created 2021, Contributors: Nigel Swab
 import numpy as np
 import matplotlib.pyplot as plt
 from pandas import DataFrame as df
-from dataclasses import dataclass
 
 from lib.pyqt_helper import Dialogs
 # TODO: (Maybe) add tire radius calculations shown in MF61 resource material for more accuracy
 # TODO: (Maybe) add tire stiffness calculations shown in MF61 resource material for more accuracy
 # TODO: (Maybe) sort out why the heck the last term of Mx in Mf61 is so dang messed up
-# TODO: (Maybe) Create an (abstract?) class that each MF class inherets from so there only needs to be one import/force/create data method written
 
-@dataclass
+# TODO: (Maybe) Create an (abstract?) class that each MF class inherits from so there only needs to be one
+#  import/force/create data method written. This, or just create a class that works for either. May also be worth
+#  investigating saving tire files in another format with scaling coefficients or have scaling
+#  coefficients separate for input or something '''
+
+
 class Mf61:
 
     def __init__(self):
@@ -509,7 +512,6 @@ class Mf61:
         return forces
 
 
-@dataclass
 class Mf52:
 
     """Equations from https://drive.google.com/file/d/1qjyM6F8YzKPEFXYUvE8Ptty8vhaR5SVw/view?usp=sharing"""
@@ -528,9 +530,6 @@ class Mf52:
                  'QEZ5', 'QHZ1', 'QHZ2', 'QHZ3', 'QHZ4', 'SSZ1','SSZ2', 'SSZ3', 'SSZ4', 'QTZ1',
                  'MBELT', 'FITTYP', 'WIDTH', 'RIM_WIDTH', 'RIM_RADIUS', 'VERTICAL_STIFFNESS',
                  'PRESMIN', 'PRESMAX', 'KPUMIN', 'KPUMAX', 'ALPMIN', 'ALPMAX', 'CAMMIN', 'CAMMAX']
-
-    def __init__(self):
-        pass
 
     # Model Information and Dimensions
     FITTYP: float  # Magic formula number (ie. 52 = MF5.2)
@@ -969,7 +968,7 @@ if __name__ == "__main__":
     # Choose and load tire model
     qt_helper = Dialogs(__file__ + 'get TIR')
     filename = str(qt_helper.select_file_dialog(accepted_file_types='*.TIR'))
-    coefficients = Mf61()
+    coefficients = Mf61
     Mf61.load_model_from_tir(filepath=filename)
 
     # Create test ranges for slip angles and ratios
