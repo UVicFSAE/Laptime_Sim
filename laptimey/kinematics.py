@@ -61,7 +61,7 @@ def convert_kinematics_deg_to_rad(kinematics: df, sheet: str) -> df:
     return kinematics[sheet]
 
 
-def view_kinematics(kinematics: dict[df]) -> None:
+def print_kinematics_tables(kinematics: dict[df]) -> None:
     for sheet in kinematics:
         print(f'{kinematic_data[sheet]}\n')
 
@@ -74,4 +74,4 @@ if __name__ == "__main__":
     kinematic_data = import_kinematics(filepath)
 
     # Print for debugging
-    view_kinematics(kinematic_data)
+    print_kinematics_tables(kinematic_data)
