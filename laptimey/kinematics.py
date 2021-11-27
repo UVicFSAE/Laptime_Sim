@@ -4,13 +4,18 @@
 - For now, only works with specific formatting of current kinematic sheets
 - All values as exported by lotus are for left side
 
-Created: Nigel Swab, 2021
+Contributors: Nigel Swab
+Created: 2021
 '''
 
 import numpy as np
 from pandas import DataFrame as df
+import matplotlib.pyplot as plt
 from pandas import read_excel
+from scipy.optimize import curve_fit
+from matplotlib import cm
 
+import fit_equations
 from lib.pyqt_helper import Dialogs
 
 '''
@@ -25,7 +30,7 @@ Sheets:
 '''
 
 
-def import_kinematics(file: str) -> dict[df]:
+def import_kinematics(file: str) -> dict:
     print(f'Importing kinematic Excel file...\n')
     kinematics = read_excel(file, sheet_name=None, header=0)
 
@@ -66,12 +71,81 @@ def print_kinematics_tables(kinematics: dict[df]) -> None:
         print(f'{kinematic_data[sheet]}\n')
 
 
+def fit_kin_surface(data: df, equation, fit_parameter: str = '', plot=False) -> list:
+
+    X, Y, z = prepare_kin_surface_data(data)
+
+    # Fit kinematic surface with the defined fitting equation
+    coefficients, covariance = curve_fit(equation, [X.flatten(), Y.flatten()], z)
+
+    if plot:
+        z_pred = equation([X.flatten(), Y.flatten()], *coefficients)
+        _plot_kin_surface_fit(X, Y, z, z_pred, param=fit_parameter)
+
+    return coefficients
+
+
+def fit_kin_curve(data:df, fit_type, fit_parameter: str = '', plot=False) -> list:
+    pass
+
+
+def prepare_kin_surface_data(data: df) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+    # Extract the first row of data (Steering Rack Travel [mm]), skipping the column & row label
+    steering_rack_data_mm = data.columns[1:].to_numpy()
+    # Extract first column of data (Bump Travel [mm])
+    bump_travel_data_mm = data['Bump Travel [mm]'].to_numpy()
+    # Extract camber/toe data
+    z = data.iloc[:, 1:].to_numpy()
+
+    # Create a 2D mesh and flatten
+    steering_rack_mm, bump_mm = np.meshgrid(steering_rack_data_mm, bump_travel_data_mm)
+    z = z.flatten()
+
+    return bump_mm.astype('float64'), steering_rack_mm.astype('float64'), z.astype('float64')
+
+
+def prepare_kin_curve_data(data:df) -> np.ndarray:
+    pass
+
+
+def _plot_kin_surface_fit(X: np.ndarray, Y: np.ndarray, z: np.ndarray, z_pred: np.ndarray, param: str = '') -> None:
+
+    # Reshape z for correct surface plot format
+    Z_pred = np.reshape(z_pred, X.shape)
+
+    # Convert to degrees for readability
+    Z_pred = np.rad2deg(Z_pred)
+    z = np.rad2deg(z)
+
+    # Create plots
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    surf = ax.plot_surface(X, Y, Z_pred, cmap=cm.get_cmap('Spectral'), linewidth=0, antialiased=False)
+    ax.scatter3D(X, Y, z)
+
+    # Titles and labels
+    plt.title(f'{param} Map')
+    ax.set_xlabel('Bump Travel [mm]')
+    ax.set_label('Steering Rack Travel [mm]')
+    ax.set_zlabel(f'{param} [deg]')
+    plt.show()
+
+
+def _plot_kin_curve_fit(x: np.ndarray,  y: np.ndarray) -> None:
+    pass
+
+
 if __name__ == "__main__":
 
-    # Choose and load tire model
-    qt_helper = Dialogs(__file__ + 'Get Kinematics File')
-    filepath = str(qt_helper.select_file_dialog(accepted_file_types='*.xlsx'))
+    # For debugging. Set filepath = '' if you want to use file explorer to choose kinematic file
+    filepath = 'vehicle\Steering and Kinematics\KinSheetUV19.xlsx'
+    if not filepath:
+        # Choose and load tire model
+        qt_helper = Dialogs(__file__ + 'Get Kinematics File')
+        filepath = str(qt_helper.select_file_dialog(accepted_file_types='*.xlsx'))
     kinematic_data = import_kinematics(filepath)
 
     # Print for debugging
-    print_kinematics_tables(kinematic_data)
+    # print_kinematics_tables(kinematic_data)
+    KCAMf_coeffs = fit_kin_surface(kinematic_data['KCAMf'], equation=poly33, fit_parameter='Camber', plot=True)
+    KTOEf_coeffs = fit_kin_surface(kinematic_data['KTOEf'], equation=poly12, fit_parameter='Toe', plot=True)
