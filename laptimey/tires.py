@@ -1,15 +1,27 @@
 """
-This file contains the tire model classes and their functions for the calculation of tire forces
+This file contains the tire model classes and their functions for the calculation of tire forces.
+All calculations are done in the ISO coordinate frame for tires.
 
 - alpha = slip angle [deg]
 - kappa = slip ratio [-]
-- gamma = camber [deg]
+- gamma = inclination_angle [deg]
+
+
+
+For converting TIR models,
+- ENSURE THAT TIRE FILE HAS A FITTYPE = XX (52, or 61)
+-- Not inherently included in Mf52 optimumT outputs
 
 Assumptions:
 - Constant radius used
-- Corrections for large camber angles not used for Mz
+- Corrections for large inclination_angle angles not used for Mz
+- Steady state operation
+- Constant tire temperature
+- More in specific models (still need to add)
+- So many, need to come back to list all of them lol
 
-Created 2021, Contributors: Nigel Swab
+Created: 2021
+Contributors: Nigel Swab
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,11 +29,8 @@ from pandas import DataFrame as df
 from abc import abstractmethod, ABC
 
 from lib.pyqt_helper import Dialogs
-# TODO: (Maybe) add tire radius calculations shown in MF61 resource material for more accuracy
-# TODO: (Maybe) add tire stiffness calculations shown in MF61 resource material for more accuracy
-# TODO: (Maybe) sort out why the heck the last term of Mx in Mf61 is so dang messed up
 
-# TODO: (Maybe) Create a base tire class and subclasses for each Mf version.
+# TODO: (Maybe) add provisions for "low speed"
 
 
 class MagicFormula(ABC):
@@ -44,7 +53,7 @@ class MagicFormula(ABC):
                  'PRESMIN', 'PRESMAX', 'KPUMIN', 'KPUMAX', 'ALPMIN', 'ALPMAX', 'CAMMIN', 'CAMMAX']
 
     # Model Information and Dimensions
-    MODEL: int  # Expected model to be used when passed in
+    MODEL: float  # Expected model to be used when passed in
     FITTYP: float  # Magic formula number (ie. 61 = MF6.1)
     WIDTH: float  # Free tyre radius
     RIM_RADIUS: float  # Nominal aspect ratio
@@ -56,8 +65,8 @@ class MagicFormula(ABC):
     KPUMAX: float  # Maximum Valid Slip Ratio (-)
     ALPMIN: float  # Minimum Valid Slip Angle (rad)
     ALPMAX: float  # Maximum Valid Slip Angle (rad)
-    CAMMIN: float  # Minimum Valid Camber Angle (rad)
-    CAMMAX: float  # Maximum Valid Camber Angle (rad)
+    CAMMIN: float  # Minimum Valid inclination_angle Angle (rad)
+    CAMMAX: float  # Maximum Valid inclination_angle Angle (rad)
 
     # Initializations
     FNOMIN: float  # Nominal Vertical Load
@@ -86,8 +95,8 @@ class MagicFormula(ABC):
     LYKA: float  # Scale factor of alpha influence on Fx
     LVYKA: float  # Scale factor of kappa induced Fy
     LS: float  # Scale factor of moment arm of Fx
-    LKYC: float  # Scale factor of camber force stiffness
-    LKZC: float  # Scale factor of camber torque stiffness
+    LKYC: float  # Scale factor of inclination_angle force stiffness
+    LKZC: float  # Scale factor of inclination_angle torque stiffness
     LMUV: float  # Scale factor with slip speed decaying friction
     LMX: float  # Scale factor of overturning couple
     LMY: float  # Scale factor of rolling resistance torque
@@ -97,7 +106,7 @@ class MagicFormula(ABC):
     PCX1: float  # Shape factor Cfx for longitudinal force
     PDX1: float  # Longitudinal friction Mux at Fznom
     PDX2: float  # Variation of friction Mux with load
-    PDX3: float  # Variation of friction Mux with camber squared
+    PDX3: float  # Variation of friction Mux with inclination_angle squared
     PEX1: float  # Longitudinal curvature Efx at Fznom
     PEX2: float  # Variation of curvature Efx with load
     PEX3: float  # Variation of curvature Efx with load squared
@@ -115,7 +124,7 @@ class MagicFormula(ABC):
     PPX4: float  # quadratic influence of inflation pressure on peak longitudinal friction
     RBX1: float  # Slope factor for combined slip Fx reduction
     RBX2: float  # Variation of slope Fx reduction with kappa
-    RBX3: float  # Influence of camber on stiffness for Fx combined
+    RBX3: float  # Influence of inclination_angle on stiffness for Fx combined
     RCX1: float  # Shape factor for combined slip Fx reduction
     REX1: float  # Curvature factor of combined Fx
     REX2: float  # Curvature factor of combined Fx with load
@@ -126,53 +135,53 @@ class MagicFormula(ABC):
 
     # Overturning Coefficients
     SX1: float  # Vertical shift of overturning moment
-    QSX2: float  # Camber induced overturning couple
+    QSX2: float  # inclination_angle induced overturning couple
     QSX3: float  # Fy induced overturning couple
-    QSX4: float  # Mixed load lateral force and camber on Mx
-    QSX5: float  # Load effect on Mx with lateral force and camber
+    QSX4: float  # Mixed load lateral force and inclination_angle on Mx
+    QSX5: float  # Load effect on Mx with lateral force and inclination_angle
     QSX6: float  # B-factor of load with Mx
-    QSX7: float  # Camber with load on Mx
+    QSX7: float  # inclination_angle with load on Mx
     QSX8: float  # Lateral force with load on Mx
     QSX9: float  # B-factor of lateral force with load on Mx
-    QSX10: float  # Vertical force with camber on Mx
-    QSX11: float  # B-factor of vertical force with camber on Mx
-    QSX12: float  # Camber squared induced overturning moment
+    QSX10: float  # Vertical force with inclination_angle on Mx
+    QSX11: float  # B-factor of vertical force with inclination_angle on Mx
+    QSX12: float  # inclination_angle squared induced overturning moment
     QSX13: float  # Lateral force induced overturning moment
-    QSX14: float  # Lateral force induced overturning moment with camber
+    QSX14: float  # Lateral force induced overturning moment with inclination_angle
     QPMX1: float  # Influence of inflation pressure on overturning moment
 
     # Lateral Coefficients
     PCY1: float  # Shape factor Cfy for lateral forces
     PDY1: float  # Lateral friction Muy
     PDY2: float  # Variation of friction Muy with load
-    PDY3: float  # Variation of friction Muy with squared camber
+    PDY3: float  # Variation of friction Muy with squared inclination_angle
     PEY1: float  # Lateral curvature Efy at Fznom
     PEY2: float  # Variation of curvature Efy with load
-    PEY3: float  # Zero order camber dependency of curvature Efy
-    PEY4: float  # Variation of curvature Efy with camber
-    PEY5: float  # Variation of curvature Efy with camber squared
+    PEY3: float  # Zero order inclination_angle dependency of curvature Efy
+    PEY4: float  # Variation of curvature Efy with inclination_angle
+    PEY5: float  # Variation of curvature Efy with inclination_angle squared
     PKY1: float  # Maximum value of stiffness Kfy/Fznom
     PKY2: float  # Load at which Kfy reaches maximum value
-    PKY3: float  # Variation of Kfy/Fznom with camber
+    PKY3: float  # Variation of Kfy/Fznom with inclination_angle
     PKY4: float  # Curvature of stiffness Kfy
-    PKY5: float  # Peak stiffness variation with camber squared
-    PKY6: float  # Fy camber stiffness factor
-    PKY7: float  # Vertical load dependency of camber stiffness
+    PKY5: float  # Peak stiffness variation with inclination_angle squared
+    PKY6: float  # Fy inclination_angle stiffness factor
+    PKY7: float  # Vertical load dependency of inclination_angle stiffness
     PHY1: float  # Horizontal shift Shy at Fznom
     PHY2: float  # Variation of shift Shy with load
     PVY1: float  # Vertical shift in Svy/Fz at Fznom
     PVY2: float  # Variation of shift Svy/Fz with load
-    PVY3: float  # Variation of shift Svy/Fz with camber
-    PVY4: float  # Variation of shift Svy/Fz with camber and load
+    PVY3: float  # Variation of shift Svy/Fz with inclination_angle
+    PVY4: float  # Variation of shift Svy/Fz with inclination_angle and load
     PPY1: float  # influence of inflation pressure on cornering stiffness
     PPY2: float  # influence of inflation pressure on dependency of nominal tyre load on cornering stiffness
     PPY3: float  # linear influence of inflation pressure on lateral peak friction
     PPY4: float  # quadratic influence of inflation pressure on lateral peak friction
-    PPY5: float  # Influence of inflation pressure on camber stiffness
+    PPY5: float  # Influence of inflation pressure on inclination_angle stiffness
     RBY1: float  # Slope factor for combined Fy reduction
     RBY2: float  # Variation of slope Fy reduction with alpha
     RBY3: float  # Shift term for alpha in slope Fy reduction
-    RBY4: float  # Influence of camber on stiffness of Fy combined
+    RBY4: float  # Influence of inclination_angle on stiffness of Fy combined
     RCY1: float  # Shape factor for combined Fy reduction
     REY1: float  # Curvature factor of combined Fy
     REY2: float  # Curvature factor of combined Fy with load
@@ -180,7 +189,7 @@ class MagicFormula(ABC):
     RHY2: float  # Shift factor for combined Fy reduction with load
     RVY1: float  # Kappa induced side force Svyk/Muy*Fz at Fznom
     RVY2: float  # Variation of Svyk/Muy*Fz with load
-    RVY3: float  # Variation of Svyk/Muy*Fz with camber
+    RVY3: float  # Variation of Svyk/Muy*Fz with inclination_angle
     RVY4: float  # Variation of Svyk/Muy*Fz with alpha
     RVY5: float  # Variation of Svyk/Muy*Fz with kappa
     RVY6: float  # Variation of Svyk/Muy*Fz with atan(kappa)
@@ -189,37 +198,37 @@ class MagicFormula(ABC):
     QBZ1: float  # Trail slope factor for trail Bpt at Fznom
     QBZ2: float  # Variation of slope Bpt with load
     QBZ3: float  # Variation of slope Bpt with load squared
-    QBZ4: float  # Variation of slope Bpt with camber
-    QBZ5: float  # Variation of slope Bpt with absolute camber
-    QBZ6: float  # Camber influence Bt
+    QBZ4: float  # Variation of slope Bpt with inclination_angle
+    QBZ5: float  # Variation of slope Bpt with absolute inclination_angle
+    QBZ6: float  # inclination_angle influence Bt
     QBZ9: float  # Factor for scaling factors of slope factor Br of Mzr
     QBZ10: float  # Factor for dimensionless cornering stiffness of Br of Mzr
     QCZ1: float  # Shape factor Cpt for pneumatic trail
     QDZ1: float  # Peak trail Dpt = Dpt*(Fz/Fznom*R0)
     QDZ2: float  # Variation of peak Dpt" with load
-    QDZ3: float  # Variation of peak Dpt" with camber
-    QDZ4: float  # Variation of peak Dpt" with camber squared
+    QDZ3: float  # Variation of peak Dpt" with inclination_angle
+    QDZ4: float  # Variation of peak Dpt" with inclination_angle squared
     QDZ6: float  # Peak residual torque Dmr" = Dmr/(Fz*R0)
     QDZ7: float  # Variation of peak factor Dmr" with load
-    QDZ8: float  # Variation of peak factor Dmr" with camber
-    QDZ9: float  # Variation of peak factor Dmr" with camber and load
-    QDZ10: float  # Variation of peak factor Dmr with camber squared
-    QDZ11: float  # Variation of Dmr with camber squared and load
+    QDZ8: float  # Variation of peak factor Dmr" with inclination_angle
+    QDZ9: float  # Variation of peak factor Dmr" with inclination_angle and load
+    QDZ10: float  # Variation of peak factor Dmr with inclination_angle squared
+    QDZ11: float  # Variation of Dmr with inclination_angle squared and load
     QEZ1: float  # Trail curvature Ept at Fznom
     QEZ2: float  # Variation of curvature Ept with load
     QEZ3: float  # Variation of curvature Ept with load squared
     QEZ4: float  # Variation of curvature Ept with sign of Alpha-t
-    QEZ5: float  # Variation of Ept with camber and sign Alpha-t
+    QEZ5: float  # Variation of Ept with inclination_angle and sign Alpha-t
     QHZ1: float  # Trail horizontal shift Sht at Fznom
     QHZ2: float  # Variation of shift Sht with load
-    QHZ3: float  # Variation of shift Sht with camber
-    QHZ4: float  # Variation of shift Sht with camber and load
+    QHZ3: float  # Variation of shift Sht with inclination_angle
+    QHZ4: float  # Variation of shift Sht with inclination_angle and load
     PPZ1: float  # effect of inflation pressure on length of pneumatic trail
     PPZ2: float  # Influence of inflation pressure on residual aligning torque
     SSZ1: float  # Nominal value of s/R0: effect of Fx on Mz
     SSZ2: float  # Variation of distance s/R0 with Fy/Fznom
-    SSZ3: float  # Variation of distance s/R0 with camber
-    SSZ4: float  # Variation of distance s/R0 with load and camber
+    SSZ3: float  # Variation of distance s/R0 with inclination_angle
+    SSZ4: float  # Variation of distance s/R0 with load and inclination_angle
 
     def load_model_from_tir(self, filepath: str) -> None:
         ''' Takes the passed in file path, extracts the necessary data, and populates the dictionary with both the key
@@ -248,7 +257,7 @@ class MagicFormula(ABC):
                     pass
         self.Fz0 = self.FNOMIN * self.LFZ0
 
-        if self.FITTYP != self.MODEL:
+        if self.MODEL != self.FITTYP:
             raise ValueError(f'Expecting Mf{self.MODEL: .0f}, got Mf{self.FITTYP: .0f}')
         else:
             print(f'Tire model loaded \n')
@@ -279,29 +288,45 @@ class MagicFormula(ABC):
         return forces
 
     def plot_force(self, data):
+        # TODO: - Add plot labels
+
+        fig, ((ax00, ax01), (ax10, ax11)) = plt.subplots(2, 2)
+
         # Fy
-        x = data['Slip Angle [deg]']
-        y = data['Fy [N]']
-        plt.figure('Fy')
-        plt.plot(x, y)
+        slip_angles = data['Slip Angle [deg]']
+        fy = data['Fy [N]']
+        ax00.plot(slip_angles, fy,)
+        ax00.set_xlabel('Slip Angle [deg]')
+        ax00.set_ylabel('Fy [N]')
+        ax00.set_title('Tire Lateral Force')
 
         # Fx
-        x = data['Slip Ratio [-]']
-        y = data['Fx [N]']
-        plt.figure('Fx')
-        plt.plot(x, y)
+        slip_ratios = data['Slip Ratio [-]']
+        fx = data['Fx [N]']
+        ax01.plot(slip_ratios, fx)
+        ax01.set_xlabel('Slip Ratio [-]')
+        ax01.set_ylabel('Fx [n]')
+        ax01.set_title('Tire Longitudinal Force')
 
         # Mz
-        x = data['Slip Angle [deg]']
-        y = data['Mz [Nm]']
-        plt.figure('Mz')
-        plt.plot(x, y)
+        mz = data['Mz [Nm]']
+        ax10.plot(slip_angles, mz)
+        ax10.set_xlabel('Slip Angle [deg]')
+        ax10.set_ylabel('Mz [Nm]')
+        ax10.set_title('Tire Aligning Moment')
 
         # Mx
-        y = data['Mx [Nm]']
-        plt.figure('Mx')
-        plt.plot(x, y)
+        mx = data['Mx [Nm]']
+        ax11.plot(slip_angles, mx)
+        ax11.set_xlabel('Slip Angle [deg]')
+        ax11.set_ylabel('Mx [Nm]')
+        ax11.set_title('Tire Overturning Moment')
 
+        fig.suptitle('Tire Forces', fontsize=16)
+        mng = plt.get_current_fig_manager()
+        mng.window.showMaximized()
+        mng.set_window_title('Tire Forces')
+        plt.subplots_adjust(wspace=0.2, hspace=0.25)
         plt.show()
 
     def tire_forces(self, alpha, kappa, gamma, Fz, tire_pressure):
@@ -351,7 +376,7 @@ class Mf61(MagicFormula):
 
     def f_y(self, alpha, kappa, gamma, Fz, dfz, dpi):
         '''Calculates and returns the lateral force produced by a tire given a slip angle (alpha), slip ratio (kappa),
-        camber (gamma), normal force  (Fz), and tire pressure
+        inclination_angle (gamma), normal force  (Fz), and tire pressure
 
         :param self:
         :param alpha:
@@ -409,8 +434,8 @@ class Mf61(MagicFormula):
         return Fy, By, Cy, SVy, SHy, Kya
 
     def f_x(self, alpha, kappa, gamma, Fz, dfz, dpi):
-        ''' Calculates and returns the longitudinal force produced by a tire given a slip angle (alpha), slip ratio (kappa),
-        camber (gamma), normal force  (Fz), and tire pressure
+        ''' Calculates and returns the longitudinal force produced by a tire given a slip angle (alpha),
+        slip ratio (kappa), inclination_angle (gamma), normal force  (Fz), and tire pressure
 
         :param self:
         :param alpha:
@@ -456,7 +481,7 @@ class Mf61(MagicFormula):
 
     def m_z(self, alpha, kappa, gamma, Fz, Fy, Fx, dfz, dpi, By, Cy, SVy, SHy, Kya, Kxk):
         '''
-        NOTE: Fy at 0 camber assumed approximately equal to calculated Fy to save computation time (for now)
+        NOTE: Fy at 0 inclination_angle assumed approximately equal to calculated Fy to save computation time (for now)
 
         :param self:
         :param alpha:
@@ -476,9 +501,9 @@ class Mf61(MagicFormula):
         :return:
         '''
 
-        # Computational time not worth recalculating Fy with 0 camber given small camber angles
+        # Computational time not worth recalculating Fy with 0 inclination_angle given small inclination_angle angles
         Fyp0 = Fy
-        # TODO: Test to see how much of a difference the 0 camber Fy makes
+        # TODO: Test to see how much of a difference the 0 inclination_angle Fy makes
         # Fyp0, By, Cy, SVy, SHy, Kya = self.f_y(alpha, kappa, gamma, Fz, dfz, dpi)
 
         # alpha_m = alpha when disregarding transient effects
@@ -559,7 +584,7 @@ class Mf52(MagicFormula):
 
     def f_y(self, alpha, kappa, gamma, Fz, dfz, dpi):
         '''Calculates and returns the lateral force produced by a tire given a slip angle (alpha), slip ratio (kappa),
-        camber (gamma), normal force  (Fz), and tire pressure
+        inclination_angle (gamma), normal force  (Fz), and tire pressure
 
         :param self:
         :param alpha:
@@ -609,8 +634,8 @@ class Mf52(MagicFormula):
         return Fy, By, Cy, SVy, SHy, Kya
 
     def f_x(self, alpha, kappa, gamma, Fz, dfz, dpi):
-        ''' Calculates and returns the longitudinal force produced by a tire given a slip angle (alpha), slip ratio (kappa),
-        camber (gamma), normal force  (Fz), and tire pressure
+        ''' Calculates and returns the longitudinal force produced by a tire given a slip angle (alpha),
+        slip ratio (kappa), inclination_angle (gamma), normal force  (Fz), and tire pressure
 
         :param self:
         :param alpha:
@@ -655,7 +680,7 @@ class Mf52(MagicFormula):
 
     def m_z(self, alpha, kappa, gamma, Fz, Fy, Fx, dfz, dpi, By, Cy, SVy, SHy, Kya, Kxk):
         '''
-        NOTE: Fy at 0 camber assumed approximately equal to calculated Fy to save computation time (for now)
+        NOTE: Fy at 0 inclination_angle assumed approximately equal to calculated Fy to save computation time (for now)
 
         :param self:
         :param alpha:
@@ -675,7 +700,7 @@ class Mf52(MagicFormula):
         :return:
         '''
 
-        # Computational time not worth recalculating Fy with 0 camber given small camber angles
+        # Computational time not worth recalculating Fy with 0 inclination_angle given small inclination_angle angles
         Fyp0 = Fy
         gamma = gamma * self.LKZC
 
@@ -738,14 +763,18 @@ if __name__ == "__main__":
     # Choose and load tire model
     qt_helper = Dialogs(__file__ + 'get TIR')
     filename = str(qt_helper.select_file_dialog(accepted_file_types='*.TIR'))
-    tire = Mf52()
+    tire = Mf61()
     tire.load_model_from_tir(filepath=filename)
 
     # Create test ranges for slip angles and ratios
-    slip_angles = np.linspace(np.deg2rad(-12), np.deg2rad(12), num=100)
-    slip_ratios = np.linspace(-0.2, 0.2, num=100)
+    slip_angles_input = np.linspace(np.deg2rad(-12), np.deg2rad(12), num=100)
+    slip_ratios_input = np.linspace(-0.2, 0.2, num=100)
+    inclinations = [np.deg2rad(-1.5), np.deg2rad(-0.5), 0, np.deg2rad(0.5), np.deg2rad(1.5)]
 
     # Create forces to plot
-    camber_rad = 0.5 * np.pi/180
-    tire_forces = tire.create_tire_plot_test_data(slip_angles, slip_ratios, camber_rad, 1100, 55158)
-    tire.plot_force(tire_forces)
+    # inclination_angle_rad = 1 * np.pi/180
+    for inclination_angle_rad in inclinations:
+        tire_forces = tire.create_tire_plot_test_data(slip_angles_input, slip_ratios_input, inclination_angle_rad, 1100, 55158)
+        print(tire.tire_forces(0, 0, inclination_angle_rad, 1100, 55158))
+        tire.plot_force(tire_forces)
+
