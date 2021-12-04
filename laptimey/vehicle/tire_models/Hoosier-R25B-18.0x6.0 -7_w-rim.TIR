@@ -43,7 +43,7 @@ ROAD_DIRECTION           = 1             $Direction of travelled distance
 !    -road contact for 2D roads
 !
 
-PROPERTY_FILE_FORMAT     ='MF61'           $Magic Formula Version number
+PROPERTY_FILE_FORMAT     ='MF61'
 USER_SUB_ID              = 815
 N_TIRE_STATES            = 4
 USE_MODE                 = 4               $Tyre use mode switch (ADAMS only). OptimumT cannot automatically set this value
@@ -55,7 +55,7 @@ $-----------------------------------------------------------dimensions
 UNLOADED_RADIUS          = 0.2286               $Free tyre radius 
 WIDTH                    = 0.154               $Nominal section width of the tyre 
 ASPECT_RATIO             = 0.4               $Nominal aspect ratio
-RIM_RADIUS               = 0.1651                $Nominal rim radius
+RIM_RADIUS               = 0.2286               $Nominal rim radius 
 RIM_WIDTH                = 0.1778               $Rim width 
 $-------------------------------------------------OPERATING_CONDITIONS
 [OPERATING_CONDITIONS]
@@ -72,7 +72,7 @@ BELT_IYY                 = 0.6               $Belt polar moment of inertia
 GRAVITY                  = -9.81             $Gravity acting on belt in Z direction
 $--------------------------------------------------------------vertical
 [VERTICAL]
-FNOMIN                   = -1100.002              		$Nominal wheel load
+FNOMIN                   = 1100.002              		$Nominal wheel load
 VERTICAL_STIFFNESS       = 107703      $Tyre vertical stiffness         
 VERTICAL_DAMPING         = 0           $Tyre vertical damping         
 MC_CONTOUR_A             = 0.5               $Motorcycle contour ellips A  
