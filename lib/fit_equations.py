@@ -39,10 +39,10 @@ class PolyCurve(EquationFits):
                      'poly5': PolyCurve.poly5,
                      'poly6': PolyCurve.poly6}
 
-        if self.fit_type not in equations.keys():
-            raise AttributeError(f'Fit type {fit_type} not currently included in PolySurface')
-        else:
+        if self.fit_type in equations:
             self.equation = equations[fit_type]
+        else:
+            raise AttributeError(f'Fit type {fit_type} not currently included in PolySurface')
 
     def calculate(self, input_data):
         return self.equation(input_data, *self.coefficients)
@@ -84,10 +84,10 @@ class PolySurface(EquationFits):
                      'poly32': PolySurface.poly32,
                      'poly33': PolySurface.poly33}
 
-        if self.fit_type not in equations.keys():
-            raise AttributeError(f'Fit type {fit_type} not currently included in PolySurface')
-        else:
+        if self.fit_type in equations:
             self.equation = equations[fit_type]
+        else:
+            raise AttributeError(f'Fit type {fit_type} not currently included in PolySurface')
 
     def calculate(self, input_data):
         return self.equation(input_data, *self.coefficients)

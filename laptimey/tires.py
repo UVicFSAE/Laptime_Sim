@@ -23,34 +23,43 @@ Assumptions:
 Created: 2021
 Contributors: Nigel Swab
 """
-import numpy as np
+from abc import ABC, abstractmethod
+
 import matplotlib.pyplot as plt
+import numpy as np
 from pandas import DataFrame as df
-from abc import abstractmethod, ABC
 
 from lib.pyqt_helper import Dialogs
+
 
 # TODO: (Maybe) add provisions for "low speed"
 
 
 class MagicFormula(ABC):
 
-    __slots__ = ['MODEL', 'FNOMIN', 'UNLOADED_RADIUS', 'LONGVL', 'NOMPRES', 'Fz0', 'LFZ0', 'LCX', 'LMUX',
-                 'LEX', 'LKX', 'LHX', 'LVX', 'LCY', 'LMUY', 'LEY', 'LKY', 'LHY', 'LVY', 'LTR', 'LRES',
-                 'LXAL', 'LYKA', 'LVYKA', 'LS', 'LKYC', 'LKZC', 'LMUV', 'LMX', 'LMY', 'LVMX', 'PCX1',
-                 'PDX1', 'PDX2', 'PDX3', 'PEX1', 'PEX2', 'PEX3', 'PEX4', 'PKX1', 'PKX2', 'PKX3', 'PHX1',
-                 'PHX2', 'PVX1', 'PVX2', 'PPX1', 'PPX2', 'PPX3', 'PPX4', 'RBX1', 'RBX2', 'RBX3', 'RCX1',
-                 'REX1', 'REX2', 'PTX1', 'PTX2', 'PTX3', 'RHX1', 'QSX1', 'QSX2', 'QSX3', 'QSX4', 'QSX5',
-                 'QSX6', 'QSX7', 'QSX8', 'QSX9', 'QSX10', 'QSX11', 'QSX12', 'QSX13', 'QSX14', 'QPMX1',
-                 'PCY1', 'PDY1', 'PDY2', 'PDY3', 'PEY1', 'PEY2', 'PEY3', 'PEY4', 'PEY5', 'PKY1', 'PKY2',
-                 'PKY3', 'PKY4', 'PKY5', 'PKY6', 'PKY7', 'PHY1', 'PHY2', 'PHY3', 'PVY1', 'PVY2', 'PVY3',
-                 'PVY4', 'PPY1', 'PPY2', 'PPY3', 'PPY4', 'PPY5', 'RBY1', 'RBY2', 'RBY3', 'RBY4', 'RCY1',
-                 'REY1', 'REY2', 'RHY1', 'RHY2', 'RVY1', 'RVY2', 'RVY3', 'RVY4', 'RVY5', 'RVY6', 'PTY1',
-                 'PTY2', 'QBZ1', 'QBZ2', 'QBZ3', 'QBZ4', 'QBZ5', 'QBZ6', 'QBZ9', 'QBZ10', 'QCZ1',  'QDZ1',
-                 'QDZ2', 'QDZ3', 'QDZ4', 'QDZ6', 'QDZ7', 'QDZ8', 'QDZ9', 'QDZ10', 'QDZ11',  'QEZ1', 'QEZ2',
-                 'QEZ3', 'QEZ4', 'QEZ5', 'QHZ1', 'QHZ2', 'QHZ3', 'QHZ4', 'PPZ1', 'PPZ2', 'SSZ1', 'SSZ2',
-                 'SSZ3', 'SSZ4', 'QTZ1', 'FITTYP', 'WIDTH', 'RIM_WIDTH', 'RIM_RADIUS',  'VERTICAL_STIFFNESS',
-                 'PRESMIN', 'PRESMAX', 'KPUMIN', 'KPUMAX', 'ALPMIN', 'ALPMAX', 'CAMMIN', 'CAMMAX']
+    __slots__ = [
+        'MODEL', 'FNOMIN', 'UNLOADED_RADIUS', 'LONGVL', 'NOMPRES', 'Fz0',
+        'LFZ0', 'LCX', 'LMUX', 'LEX', 'LKX', 'LHX', 'LVX', 'LCY', 'LMUY',
+        'LEY', 'LKY', 'LHY', 'LVY', 'LTR', 'LRES', 'LXAL', 'LYKA', 'LVYKA',
+        'LS', 'LKYC', 'LKZC', 'LMUV', 'LMX', 'LMY', 'LVMX', 'PCX1', 'PDX1',
+        'PDX2', 'PDX3', 'PEX1', 'PEX2', 'PEX3', 'PEX4', 'PKX1', 'PKX2', 'PKX3',
+        'PHX1', 'PHX2', 'PVX1', 'PVX2', 'PPX1', 'PPX2', 'PPX3', 'PPX4', 'RBX1',
+        'RBX2', 'RBX3', 'RCX1', 'REX1', 'REX2', 'PTX1', 'PTX2', 'PTX3', 'RHX1',
+        'QSX1', 'QSX2', 'QSX3', 'QSX4', 'QSX5', 'QSX6', 'QSX7', 'QSX8', 'QSX9',
+        'QSX10', 'QSX11', 'QSX12', 'QSX13', 'QSX14', 'QPMX1', 'PCY1', 'PDY1',
+        'PDY2', 'PDY3', 'PEY1', 'PEY2', 'PEY3', 'PEY4', 'PEY5', 'PKY1', 'PKY2',
+        'PKY3', 'PKY4', 'PKY5', 'PKY6', 'PKY7', 'PHY1', 'PHY2', 'PHY3', 'PVY1',
+        'PVY2', 'PVY3', 'PVY4', 'PPY1', 'PPY2', 'PPY3', 'PPY4', 'PPY5', 'RBY1',
+        'RBY2', 'RBY3', 'RBY4', 'RCY1', 'REY1', 'REY2', 'RHY1', 'RHY2', 'RVY1',
+        'RVY2', 'RVY3', 'RVY4', 'RVY5', 'RVY6', 'PTY1', 'PTY2', 'QBZ1', 'QBZ2',
+        'QBZ3', 'QBZ4', 'QBZ5', 'QBZ6', 'QBZ9', 'QBZ10', 'QCZ1', 'QDZ1',
+        'QDZ2', 'QDZ3', 'QDZ4', 'QDZ6', 'QDZ7', 'QDZ8', 'QDZ9', 'QDZ10',
+        'QDZ11', 'QEZ1', 'QEZ2', 'QEZ3', 'QEZ4', 'QEZ5', 'QHZ1', 'QHZ2',
+        'QHZ3', 'QHZ4', 'PPZ1', 'PPZ2', 'SSZ1', 'SSZ2', 'SSZ3', 'SSZ4', 'QTZ1',
+        'FITTYP', 'WIDTH', 'RIM_WIDTH', 'RIM_RADIUS', 'VERTICAL_STIFFNESS',
+        'PRESMIN', 'PRESMAX', 'KPUMIN', 'KPUMAX', 'ALPMIN', 'ALPMAX', 'CAMMIN',
+        'CAMMAX'
+    ]
 
     # Model Information and Dimensions
     MODEL: float  # Expected model to be used when passed in
@@ -253,16 +262,16 @@ class MagicFormula(ABC):
                 if key in self.__slots__:
                     value = value.split(sep='$', maxsplit=1)
                     setattr(self, key, float(value[0]))
-                else:
-                    pass
         self.Fz0 = self.FNOMIN * self.LFZ0
 
         if self.MODEL != self.FITTYP:
-            raise ValueError(f'Expecting Mf{self.MODEL: .0f}, got Mf{self.FITTYP: .0f}')
+            raise ValueError(
+                f'Expecting Mf{self.MODEL: .0f}, got Mf{self.FITTYP: .0f}')
         else:
-            print(f'Tire model loaded \n')
+            print('Tire model loaded \n')
 
-    def create_tire_plot_test_data(self, alpha_range, kappa_range, gamma, Fz, tire_pressure):
+    def create_tire_plot_test_data(self, alpha_range, kappa_range, gamma, Fz,
+                                   tire_pressure):
 
         # Initialize lists for forces
         fy_forces = []
@@ -272,20 +281,34 @@ class MagicFormula(ABC):
 
         kappa = 0
         for alpha in alpha_range:
-            Fy, _, Mz, Mx = self.tire_forces(alpha, kappa, gamma, Fz, tire_pressure)
+            Fy, _, Mz, Mx = self.tire_forces(alpha, kappa, gamma, Fz,
+                                             tire_pressure)
             fy_forces.append(Fy)
             mz_forces.append(Mz)
             mx_forces.append(Mx)
 
         alpha = 0
         for kappa in kappa_range:
-            _, Fx, _, _ = self.tire_forces(alpha, kappa, gamma, Fz, tire_pressure)
+            _, Fx, _, _ = self.tire_forces(alpha, kappa, gamma, Fz,
+                                           tire_pressure)
             fx_forces.append(Fx)
         alpha_range = np.rad2deg(alpha_range)
-        headings = ['Slip Angle [deg]', 'Slip Ratio [-]', 'Fy [N]', 'Fx [N]', 'Mz [Nm]', 'Mx [Nm]']
-        forces = df(data=list(zip(alpha_range, kappa_range, fy_forces, fx_forces, mz_forces, mx_forces)),
-                    columns=headings)
-        return forces
+        headings = [
+            'Slip Angle [deg]', 'Slip Ratio [-]', 'Fy [N]', 'Fx [N]',
+            'Mz [Nm]', 'Mx [Nm]'
+        ]
+        return df(
+            data=list(
+                zip(
+                    alpha_range,
+                    kappa_range,
+                    fy_forces,
+                    fx_forces,
+                    mz_forces,
+                    mx_forces,
+                )),
+            columns=headings,
+        )
 
     def plot_force(self, data):
         # TODO: - Add plot labels
@@ -295,7 +318,10 @@ class MagicFormula(ABC):
         # Fy
         slip_angles = data['Slip Angle [deg]']
         fy = data['Fy [N]']
-        ax00.plot(slip_angles, fy,)
+        ax00.plot(
+            slip_angles,
+            fy,
+        )
         ax00.set_xlabel('Slip Angle [deg]')
         ax00.set_ylabel('Fy [N]')
         ax00.set_title('Tire Lateral Force')
@@ -347,7 +373,8 @@ class MagicFormula(ABC):
 
         Fy, By, Cy, SVy, SHy, Kya = self.f_y(alpha, kappa, gamma, Fz, dfz, dpi)
         Fx, Kxk = self.f_x(alpha, kappa, gamma, Fz, dfz, dpi)
-        Mz = self.m_z(alpha, kappa, gamma, Fz, Fy, Fx, dfz, dpi, By, Cy, SVy, SHy, Kya, Kxk)
+        Mz = self.m_z(alpha, kappa, gamma, Fz, Fy, Fx, dfz, dpi, By, Cy, SVy,
+                      SHy, Kya, Kxk)
         Mx = self.m_x(gamma, Fz, Fy, dpi)
 
         return Fy, Fx, Mz, Mx
@@ -361,7 +388,8 @@ class MagicFormula(ABC):
         pass
 
     @abstractmethod
-    def m_z(self, alpha, kappa, gamma, Fz, Fy, Fx, dfz, dpi, By, Cy, SVy, SHy, Kya, Kxk):
+    def m_z(self, alpha, kappa, gamma, Fz, Fy, Fx, dfz, dpi, By, Cy, SVy, SHy,
+            Kya, Kxk):
         pass
 
     @abstractmethod
@@ -370,9 +398,9 @@ class MagicFormula(ABC):
 
 
 class Mf61(MagicFormula):
-
-    def __init__(self):
+    def __init__(self, filepath: str):
         self.MODEL = 61
+        self.load_model_from_tir(filepath=filepath)
 
     def f_y(self, alpha, kappa, gamma, Fz, dfz, dpi):
         '''Calculates and returns the lateral force produced by a tire given a slip angle (alpha), slip ratio (kappa),
@@ -389,10 +417,12 @@ class Mf61(MagicFormula):
         '''
 
         # Pure slip
-        SVyg = Fz * (self.PVY3 + self.PVY4 * dfz) * gamma * self.LKYC * self.LMUY
+        SVyg = Fz * (self.PVY3 +
+                     self.PVY4 * dfz) * gamma * self.LKYC * self.LMUY
         SVy0 = Fz * (self.PVY1 + self.PVY2 * dfz) * self.LVY * self.LMUY
         SVy = SVy0 + SVyg
-        Kyg = (self.PKY6 + self.PKY7 * dfz) * (1 + self.PPY5 * dpi) * Fz * self.LKYC
+        Kyg = (self.PKY6 +
+               self.PKY7 * dfz) * (1 + self.PPY5 * dpi) * Fz * self.LKYC
         Kya = (1 - self.PKY3 * abs(gamma)) * self.PKY1 * self.Fz0 * (1 + self.PPY1 * dpi) \
             * np.sin(self.PKY4 * np.arctan(Fz / ((self.PKY2 + self.PKY5 * np.power(gamma, 2))
                                                  * (1 + self.PPY2 * dpi) * self.Fz0))) * self.LKY
@@ -427,7 +457,9 @@ class Mf61(MagicFormula):
 
         # Pure Lateral Force
         By_x_alpha_y = By * alpha_y
-        Fyp = Dy * np.sin(Cy * np.arctan(By_x_alpha_y - Ey * (By_x_alpha_y - np.arctan(By_x_alpha_y)))) + SVy
+        Fyp = Dy * np.sin(
+            Cy * np.arctan(By_x_alpha_y - Ey *
+                           (By_x_alpha_y - np.arctan(By_x_alpha_y)))) + SVy
 
         # Combined Lateral Force ( Fyp == Fy if kappa == 0)
         Fy = Gyk * Fyp + SVyk
@@ -460,26 +492,34 @@ class Mf61(MagicFormula):
         Dx = Mewx * Fz
         Cx = self.PCX1 * self.LCX
         Bx = Kxk / (Cx * Dx)
-        Gxa = 1
-
         # Combined Slip
-        if alpha:
-            SHxa = self.RHX1
-            Exa = self.REX1 + self.REX2 * dfz
-            Cxa = self.RCX1
-            Bxa = (self.RBX1 + self.RBX3 * gamma ** 2) * np.cos(np.arctan(self.RBX2 * kappa)) * self.LXAL
-            alpha_s = alpha + SHxa
-            Bxa_x_alpha_s = Bxa * alpha_s
-            Bxa_x_SHxa = Bxa * SHxa
-            Gxa = (np.cos(Cxa * np.arctan(Bxa_x_alpha_s - Exa * (Bxa_x_alpha_s - np.arctan(Bxa_x_alpha_s))))) / \
-                  (np.cos(Cxa * np.arctan(Bxa_x_SHxa - Exa * (Bxa_x_SHxa - np.arctan(Bxa_x_SHxa)))))
-
+        Gxa = self.calc_combined_long_force_scalar(dfz, gamma, kappa,
+                                                   alpha) if alpha else 1
         # Longitudinal Force (N)
         Bx_kappa_x = Bx * kappa_x
-        Fx = (Dx * np.sin(Cx * np.arctan(Bx_kappa_x - Ex * (Bx_kappa_x - np.arctan(Bx_kappa_x)))) + SVx) * Gxa
+        Fx = (Dx * np.sin(Cx * np.arctan(Bx_kappa_x - Ex *
+                                         (Bx_kappa_x - np.arctan(Bx_kappa_x))))
+              + SVx) * Gxa
         return Fx, Kxk
 
-    def m_z(self, alpha, kappa, gamma, Fz, Fy, Fx, dfz, dpi, By, Cy, SVy, SHy, Kya, Kxk):
+    # TODO Rename this here and in `f_x`
+    def calc_combined_long_force_scalar(self, dfz, gamma, kappa, alpha):
+        SHxa = self.RHX1
+        Exa = self.REX1 + self.REX2 * dfz
+        Cxa = self.RCX1
+        Bxa = (self.RBX1 + self.RBX3 * gamma**2) * np.cos(
+            np.arctan(self.RBX2 * kappa)) * self.LXAL
+        alpha_s = alpha + SHxa
+        Bxa_x_alpha_s = Bxa * alpha_s
+        Bxa_x_SHxa = Bxa * SHxa
+        return (np.cos(
+            Cxa * np.arctan(Bxa_x_alpha_s - Exa *
+                            (Bxa_x_alpha_s - np.arctan(Bxa_x_alpha_s)))
+        )) / (np.cos(Cxa * np.arctan(Bxa_x_SHxa - Exa *
+                                     (Bxa_x_SHxa - np.arctan(Bxa_x_SHxa)))))
+
+    def m_z(self, alpha, kappa, gamma, Fz, Fy, Fx, dfz, dpi, By, Cy, SVy, SHy,
+            Kya, Kxk):
         '''
         NOTE: Fy at 0 inclination_angle assumed approximately equal to calculated Fy to save computation time (for now)
 
@@ -508,17 +548,22 @@ class Mf61(MagicFormula):
 
         # alpha_m = alpha when disregarding transient effects
         alpha_m = alpha
-        SHt = self.QHZ1 + self.QHZ2 * dfz + (self.QHZ3 + self.QHZ4 * dfz) * gamma
+        SHt = self.QHZ1 + self.QHZ2 * dfz + (self.QHZ3 +
+                                             self.QHZ4 * dfz) * gamma
         alpha_r = alpha_m + SHy + SVy / Kya
         alpha_t = alpha_m + SHt
 
-        if not kappa or not alpha:  # if pure slip
+        if not kappa or not alpha_m:  # if pure slip
             alpha_teq = alpha_t
             alpha_req = alpha_r
             s = 0
         else:
-            alpha_teq = np.arctan(np.sqrt((np.tan(alpha_t)) ** 2 + (Kxk / Kya) ** 2 * kappa ** 2)) * np.sign(alpha_t)
-            alpha_req = np.arctan(np.sqrt((np.tan(alpha_r)) ** 2 + (Kxk / Kya) ** 2 * kappa ** 2)) * np.sign(alpha_r)
+            alpha_teq = np.arctan(
+                np.sqrt((np.tan(alpha_t))**2 +
+                        (Kxk / Kya)**2 * kappa**2)) * np.sign(alpha_t)
+            alpha_req = np.arctan(
+                np.sqrt((np.tan(alpha_r))**2 +
+                        (Kxk / Kya)**2 * kappa**2)) * np.sign(alpha_r)
             s = (self.SSZ1 + self.SSZ2 * (Fy / self.Fz0) + (self.SSZ3 + self.SSZ4 * dfz) * gamma) \
                 * self.UNLOADED_RADIUS * self.LS
 
@@ -536,16 +581,15 @@ class Mf61(MagicFormula):
             * np.cos(alpha_m)
 
         # Residual Moment (Mzr)
-        Dr = ((self.QDZ6 + self.QDZ7 * dfz) * self.LRES + (self.QDZ8 + self.QDZ9 * dfz) *
-              (1 - self.PPZ2 * dpi) * gamma * self.LKZC + (self.QDZ10 + self.QDZ11 * dfz) *
-              gamma * np.abs(gamma) * self.LKZC) * Fz * self.UNLOADED_RADIUS * self.LMUY
+        Dr = ((self.QDZ6 + self.QDZ7 * dfz) * self.LRES +
+              (self.QDZ8 + self.QDZ9 * dfz) *
+              (1 - self.PPZ2 * dpi) * gamma * self.LKZC +
+              (self.QDZ10 + self.QDZ11 * dfz) * gamma * np.abs(gamma) *
+              self.LKZC) * Fz * self.UNLOADED_RADIUS * self.LMUY
         Br = self.QBZ9 * self.LKY / self.LMUY + self.QBZ10 * By * Cy
         Mzr = Dr * np.cos(np.arctan(Br * alpha_req)) * np.cos(alpha_m)
 
-        # Aligning Moment
-        Mz = -t * Fyp0 + Mzr + s * Fx
-
-        return Mz
+        return -t * Fyp0 + Mzr + s * Fx
 
     def m_x(self, gamma, Fz, Fy, dpi):
         '''
@@ -561,26 +605,24 @@ class Mf61(MagicFormula):
         #  Fy normalized by Fz0
         Fy_div_Fz0 = Fy / self.Fz0
 
-        Mx = self.UNLOADED_RADIUS * Fz * self.LMX \
-            * (self.QSX1 * self.LVMX
-               - self.QSX2 * gamma * (1 + self.QPMX1 * dpi)
-               - self.QSX12 * gamma * np.abs(gamma)
-               + self.QSX3 * Fy_div_Fz0
-               + self.QSX4 * np.cos(self.QSX5 * np.arctan((self.QSX6 * Fz / self.Fz0) ** 2))
-               * np.sin(self.QSX7 * gamma + self.QSX8 * np.arctan(self.QSX9 * Fy_div_Fz0))
-               + self.QSX10 * np.arctan(self.QSX11 * Fy_div_Fz0) * gamma) \
-            # + self.UNLOADED_RADIUS * Fy * self.LMX * (self.QSX13 + self.QSX14 * np.abs(gamma))
         'Not sure why the last term throws everything off, OptimumTire may not fit properly for it?'
 
-        return Mx
+        return (
+            self.UNLOADED_RADIUS * Fz * self.LMX *
+            (self.QSX1 * self.LVMX - self.QSX2 * gamma *
+             (1 + self.QPMX1 * dpi) - self.QSX12 * gamma * np.abs(gamma) +
+             self.QSX3 * Fy_div_Fz0 + self.QSX4 * np.cos(self.QSX5 * np.arctan(
+                 (self.QSX6 * Fz / self.Fz0)**2)) *
+             np.sin(self.QSX7 * gamma +
+                    self.QSX8 * np.arctan(self.QSX9 * Fy_div_Fz0)) +
+             self.QSX10 * np.arctan(self.QSX11 * Fy_div_Fz0) * gamma))
 
 
 class Mf52(MagicFormula):
-
     """Equations from https://drive.google.com/file/d/1qjyM6F8YzKPEFXYUvE8Ptty8vhaR5SVw/view?usp=sharing"""
-
-    def __init__(self):
+    def __init__(self, filepath: str):
         self.MODEL = 52
+        self.load_model_from_tir(filepath=filepath)
 
     def f_y(self, alpha, kappa, gamma, Fz, dfz, dpi):
         '''Calculates and returns the lateral force produced by a tire given a slip angle (alpha), slip ratio (kappa),
@@ -598,14 +640,17 @@ class Mf52(MagicFormula):
 
         # Pure slip
         SVy0 = Fz * (self.PVY1 + self.PVY2 * dfz) * self.LVY * self.LMUY
-        SVyg = Fz * (self.PVY3 + self.PVY4 * dfz) * gamma * self.LKYC * self.LMUY
+        SVyg = Fz * (self.PVY3 +
+                     self.PVY4 * dfz) * gamma * self.LKYC * self.LMUY
         SVy = SVy0 + SVyg
         SHy = (self.PHY1 + self.PHY2 * dfz) * self.LHY + self.PHY3 * gamma
         alpha_y = alpha + SHy
         Kya = self.PKY1 * self.Fz0 * np.sin(np.arctan(Fz / (self.PKY2 * self.Fz0))) \
             * (1 - self.PKY3 * np.abs(gamma)) * self.LKY
-        Ey = (self.PEY1 + self.PEY2 * dfz) * (1 - (self.PEY3 + self.PEY4 * gamma) * np.sign(alpha_y)) * self.LEY
-        Mewy = (self.PDY1 + self.PDY2 * dfz) * (1 - self.PDY3 * gamma ** 2) * self.LMUY
+        Ey = (self.PEY1 + self.PEY2 * dfz) * (
+            1 - (self.PEY3 + self.PEY4 * gamma) * np.sign(alpha_y)) * self.LEY
+        Mewy = (self.PDY1 +
+                self.PDY2 * dfz) * (1 - self.PDY3 * gamma**2) * self.LMUY
         Dy = Mewy * Fz
         Cy = self.PCY1 * self.LCY
         By = Kya / (Cy * Dy)
@@ -617,7 +662,8 @@ class Mf52(MagicFormula):
             SHyk = self.RHY1 + self.RHY2 * dfz
             Eyk = self.REY1 + self.REY2 * dfz
             Cyk = self.RCY1
-            Byk = self.RBY1 * np.cos(np.arctan(self.RBY2 * (alpha - self.RBY3))) * self.LYKA
+            Byk = self.RBY1 * np.cos(np.arctan(
+                self.RBY2 * (alpha - self.RBY3))) * self.LYKA
             kappa_s = kappa + SHyk
             Gyk = (np.cos(Cyk * np.arctan(Byk * kappa_s - Eyk * (Byk * kappa_s - np.arctan(Byk * kappa_s))))) / \
                   (np.cos(Cyk * np.arctan(Byk * SHyk - Eyk * (Byk * SHyk - np.arctan(Byk * SHyk)))))
@@ -626,7 +672,9 @@ class Mf52(MagicFormula):
             SVyk = DVyk * np.sin(self.RVY5 * np.arctan(self.RVY6)) * self.LVYKA
 
         # Pure Lateral Force
-        Fyp = Dy * np.sin(Cy * np.arctan(By * alpha_y - Ey * (By * alpha_y - np.arctan(By * alpha_y)))) + SVy
+        Fyp = Dy * np.sin(
+            Cy * np.arctan(By * alpha_y - Ey *
+                           (By * alpha_y - np.arctan(By * alpha_y)))) + SVy
 
         # Combined Lateral Force ( Fyp == Fy if kappa == 0)
         Fy = Gyk * Fyp + SVyk
@@ -651,36 +699,47 @@ class Mf52(MagicFormula):
         SVx = (self.PVX1 + self.PVX2 * dfz) * Fz * self.LVX * self.LMUX
         SHx = (self.PHX1 + self.PHX2 * dfz) * self.LHX
         kappa_x = kappa + SHx
-        Kxk = 0 if kappa == 0 else Fz * (self.PKX1 + self.PKX2 * dfz) * np.exp(self.PKX3 * dfz) * self.LKX
+        Kxk = 0 if kappa == 0 else Fz * (self.PKX1 + self.PKX2 * dfz) * np.exp(
+            self.PKX3 * dfz) * self.LKX
         Ex = (self.PEX1 + self.PEX2 * dfz + self.PEX3 * dfz ** 2) \
             * (1 - self.PEX4 * np.sign(kappa_x)) * self.LEX
-        Mewx = (self.PDX1 + self.PDX2 * dfz) * (1 - self.PDX3 * gamma ** 2) * self.LMUX
+        Mewx = (self.PDX1 +
+                self.PDX2 * dfz) * (1 - self.PDX3 * gamma**2) * self.LMUX
         Dx = Mewx * Fz
         Cx = self.PCX1 * self.LCX
         Bx = Kxk / (Cx * Dx)
-        Gxa = 1
-
         # Combined Slip
-        if alpha:
-            SHxa = self.RHX1
-            Exa = self.REX1 + self.REX2 * dfz
-            Cxa = self.RCX1
-            Bxa = self.RBX1 * np.cos(np.arctan(self.RBX2 * kappa)) * self.LXAL
-            alpha_s = alpha + SHxa
-            Bxa_x_alpha_s = Bxa * alpha_s
-            Bxa_x_SHxa = Bxa * SHxa
-            Gxa = (np.cos(Cxa * np.arctan(Bxa_x_alpha_s - Exa * (Bxa_x_alpha_s - np.arctan(Bxa_x_alpha_s))))) / \
-                  (np.cos(Cxa * np.arctan(Bxa_x_SHxa - Exa * (Bxa_x_SHxa - np.arctan(Bxa_x_SHxa)))))
-
+        Gxa = self.calc_combined_long_force_scalar(dfz, kappa,
+                                                   alpha) if alpha else 1
         # Longitudinal Force (N)
         Bx_x_kappa_x = Bx * kappa_x
-        Fx = (Dx * np.sin(Cx * np.arctan(Bx_x_kappa_x - Ex * (Bx_x_kappa_x - np.arctan(Bx_x_kappa_x)))) + SVx) * Gxa
+        Fx = (Dx *
+              np.sin(Cx * np.arctan(Bx_x_kappa_x - Ex *
+                                    (Bx_x_kappa_x - np.arctan(Bx_x_kappa_x))))
+              + SVx) * Gxa
 
         return Fx, Kxk
 
-    def m_z(self, alpha, kappa, gamma, Fz, Fy, Fx, dfz, dpi, By, Cy, SVy, SHy, Kya, Kxk):
+    # TODO Rename this here and in `f_x`
+    def calc_combined_long_force_scalar(self, dfz, kappa, alpha):
+        SHxa = self.RHX1
+        Exa = self.REX1 + self.REX2 * dfz
+        Cxa = self.RCX1
+        Bxa = self.RBX1 * np.cos(np.arctan(self.RBX2 * kappa)) * self.LXAL
+        alpha_s = alpha + SHxa
+        Bxa_x_alpha_s = Bxa * alpha_s
+        Bxa_x_SHxa = Bxa * SHxa
+        return (
+            np.cos(Cxa * np.arctan(Bxa_x_alpha_s - Exa *
+                                   (Bxa_x_alpha_s - np.arctan(Bxa_x_alpha_s))))) / \
+               (np.cos(Cxa * np.arctan(Bxa_x_SHxa - Exa *
+                                       (Bxa_x_SHxa - np.arctan(Bxa_x_SHxa)))))
+
+    def m_z(self, alpha, kappa, gamma, Fz, Fy, Fx, dfz, dpi, By, Cy, SVy, SHy,
+            Kya, Kxk):
         '''
-        NOTE: Fy at 0 inclination_angle assumed approximately equal to calculated Fy to save computation time (for now)
+        NOTE: Fy at 0 inclination_angle assumed approximately equal to calculated Fy to
+        save computation time (for now)
 
         :param self:
         :param alpha:
@@ -706,17 +765,22 @@ class Mf52(MagicFormula):
 
         # alpha_m = alpha when disregarding transient effects
         alpha_m = alpha
-        SHt = self.QHZ1 + self.QHZ2 * dfz + (self.QHZ3 + self.QHZ4 * dfz) * gamma
+        SHt = self.QHZ1 + self.QHZ2 * dfz + (self.QHZ3 +
+                                             self.QHZ4 * dfz) * gamma
         alpha_r = alpha_m + SHy + SVy / Kya
         alpha_t = alpha_m + SHt
 
-        if not kappa or not alpha:  # if pure slip
+        if not kappa or not alpha_m:  # if pure slip
             alpha_teq = alpha_t
             alpha_req = alpha_r
             s = 0
         else:
-            alpha_teq = np.arctan(np.sqrt((np.tan(alpha_t)) ** 2 + (Kxk / Kya) ** 2 * kappa ** 2)) * np.sign(alpha_t)
-            alpha_req = np.arctan(np.sqrt((np.tan(alpha_r)) ** 2 + (Kxk / Kya) ** 2 * kappa ** 2)) * np.sign(alpha_r)
+            alpha_teq = np.arctan(
+                np.sqrt((np.tan(alpha_t))**2 +
+                        (Kxk / Kya)**2 * kappa**2)) * np.sign(alpha_t)
+            alpha_req = np.arctan(
+                np.sqrt((np.tan(alpha_r))**2 +
+                        (Kxk / Kya)**2 * kappa**2)) * np.sign(alpha_r)
             s = (self.SSZ1 + self.SSZ2 * (Fy / self.Fz0) + (self.SSZ3 + self.SSZ4 * dfz) * gamma) \
                 * self.UNLOADED_RADIUS * self.LS
 
@@ -738,10 +802,7 @@ class Mf52(MagicFormula):
         Br = self.QBZ9 * self.LKY / self.LMUY + self.QBZ10 * By * Cy
         Mzr = Dr * np.cos(np.arctan(Br * alpha_req)) * np.cos(alpha_m)
 
-        # Aligning Moment
-        Mz = -t * Fyp0 + Mzr + s * Fx
-
-        return Mz
+        return -t * Fyp0 + Mzr + s * Fx
 
     def m_x(self, gamma, Fz, Fy, dpi=0):
         '''
@@ -753,9 +814,9 @@ class Mf52(MagicFormula):
         :return:
         '''
 
-        Mx = Fz * self.UNLOADED_RADIUS * (self.QSX1 - self.QSX2 * gamma + self.QSX3 * Fy / self.Fz0) * self.LMUX
-
-        return Mx
+        return (Fz * self.UNLOADED_RADIUS *
+                (self.QSX1 - self.QSX2 * gamma + self.QSX3 * Fy / self.Fz0) *
+                self.LMUX)
 
 
 if __name__ == "__main__":
@@ -769,12 +830,19 @@ if __name__ == "__main__":
     # Create test ranges for slip angles and ratios
     slip_angles_input = np.linspace(np.deg2rad(-12), np.deg2rad(12), num=100)
     slip_ratios_input = np.linspace(-0.2, 0.2, num=100)
-    inclinations = [np.deg2rad(-1.5), np.deg2rad(-0.5), 0, np.deg2rad(0.5), np.deg2rad(1.5)]
+    inclinations = [
+        np.deg2rad(-1.5),
+        np.deg2rad(-0.5), 0,
+        np.deg2rad(0.5),
+        np.deg2rad(1.5)
+    ]
 
     # Create forces to plot
     # inclination_angle_rad = 1 * np.pi/180
     for inclination_angle_rad in inclinations:
-        tire_forces = tire.create_tire_plot_test_data(slip_angles_input, slip_ratios_input, inclination_angle_rad, 1100, 55158)
+        tire_forces = tire.create_tire_plot_test_data(slip_angles_input,
+                                                      slip_ratios_input,
+                                                      inclination_angle_rad,
+                                                      1100, 55158)
         print(tire.tire_forces(0, 0, inclination_angle_rad, 1100, 55158))
         tire.plot_force(tire_forces)
-

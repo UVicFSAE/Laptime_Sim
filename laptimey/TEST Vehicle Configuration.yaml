@@ -30,19 +30,23 @@ arb_f_nmpdeg: 100
 arb_r_nmpdeg: 300
 motion_ratio_arb_f: 1  # ARB Twist Angle / Body Roll Angle
 motion_ratio_arb_r: 1  # ARB Twist Angle / Body Roll Angle
-camber_f_deg: -0.781
-camber_r_deg: -0.1081
-toe_f_deg: -0.3
-toe_r_deg: 0.2
+static_camber_f_deg: -0.781
+static_camber_r_deg: -0.1081
+static_toe_f_deg: -0.3
+static_toe_r_deg: 0.2
+kinematic_file: vehicle\steering_and_kinematics\KinSheetUV19.xlsx
 
 # Tire Parameters
+tire_model_f_version: 61
+tire_model_r_version: 61
+tire_model_f_filepath: C:\Users\Nigel Swab\Desktop\Laptime_Sim\laptimey\vehicle\tire_models\Hoosier-R25B-18.0x6.0 -7_w-rim.TIR
+tire_model_r_filepath: C:\Users\Nigel Swab\Desktop\Laptime_Sim\laptimey\vehicle\tire_models\Hoosier-R25B-18.0x6.0 -7_w-rim.TIR
 tire_rad_f_in: 9
 tire_rad_r_in: 9
 tire_spring_rate_f_lbpin: 637
 tire_spring_rate_r_lbpin: 637
 tire_pressure_f_psi: 10
 tire_pressure_r_psi: 10
-tire_model_filepath: C:\Users\Nigel Swab\Desktop\Laptime_Sim\laptimey\vehicle\tire_models\Hoosier-R25B-18.0x6.0 -7_w-rim.TIR
 
 # Aerodynamic Parameters
 aero_installed: True
