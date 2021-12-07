@@ -25,52 +25,11 @@ Created 2021, Contributors: Nigel Swab
 """
 
 from dataclasses import dataclass
+
 import numpy as np
 
 from lib import pyqt_helper
-from tires import Mf61Coefficients
-
-
-class UnitConversion:
-    @staticmethod
-    def psi_to_pa(psi: float) -> float:
-        return psi * 6894.76
-
-    @staticmethod
-    def pa_to_psi(psi: float) -> float:
-        return psi / 6894.76
-
-    @staticmethod
-    def mps2_to_g(mps2: float) -> float:
-        return mps2 / 9.80665
-
-    @staticmethod
-    def g_to_mps2(g: float) -> float:
-        return g * 9.80665
-
-    @staticmethod
-    def lbpin_to_npm(lbpin: float) -> float:
-        return lbpin * 175.126835
-
-    @staticmethod
-    def npm_to_lbpin(npm: float) -> float:
-        return npm / 175.126835
-
-    @staticmethod
-    def in_to_m(inches: float) -> float:
-        return inches * 0.0254
-
-    @staticmethod
-    def m_to_in(m: float) -> float:
-        return m / 0.0254
-
-    @staticmethod
-    def lb_to_kg(lb: float) -> float:
-        return lb * 0.453592
-
-    @staticmethod
-    def kg_to_lb(kg: float) -> float:
-        return kg / 0.453592
+from lib.UnitConversions import UnitConversion
 
 
 @dataclass
@@ -83,10 +42,10 @@ class VehicleParams:
                  'motion_ratio_r',
                  'motion_ratio_arb_f',
                  'motion_ratio_arb_r',
-                 'camber_f_rad',
-                 'camber_r_rad',
-                 'toe_f_rad',
-                 'toe_r_rad',
+                 'static_camber_f_rad',
+                 'static_camber_r_rad',
+                 'static_toe_f_rad',
+                 'static_toe_r_rad',
                  'roll_center_height_f_m',
                  'roll_center_height_r_m',
                  'wheelrate_f_npm',
@@ -202,10 +161,10 @@ def load_vehicle_from_yaml() -> VehicleParams:
     car.arb_r_nmpdeg = config['arb_r_nmpdeg']
     car.motion_ratio_arb_f = config['motion_ratio_arb_f']
     car.motion_ratio_arb_r = config['motion_ratio_arb_r']
-    car.camber_f_rad = np.deg2rad(config['camber_f_deg'])
-    car.camber_r_rad = np.deg2rad(config['camber_r_deg'])
-    car.toe_f_rad = np.deg2rad(config['toe_f_deg'])
-    car.toe_r_rad = np.deg2rad(config['toe_r_deg'])
+    car.static_camber_f_rad = np.deg2rad(config['camber_f_deg'])
+    car.static_camber_r_rad = np.deg2rad(config['camber_r_deg'])
+    car.static_toe_f_rad = np.deg2rad(config['toe_f_deg'])
+    car.static_toe_r_rad = np.deg2rad(config['toe_r_deg'])
 
     # Aero Parameters
     car.aero_installed = config['aero_installed']
@@ -262,7 +221,7 @@ def mass_distribution_definitions(car: VehicleParams) -> None:
     car.sprung_mass_distribution_f = (car.mass_distribution_f
                                       - ((car.mass_unsprung_f_kg * 2 + car.mass_unsprung_r_kg * 2)
                                          / car.mass_total_kg) * car.unsprung_mass_distribution_f) \
-                                     * car.mass_total_kg / car.mass_sprung_kg
+                                   * car.mass_total_kg / car.mass_sprung_kg
     car.sprung_mass_distribution_r = 1 - car.sprung_mass_distribution_f
 
     # Static wheel loads: Assumes symmetry
@@ -311,8 +270,9 @@ def roll_stiffness_calculation(car: VehicleParams) -> tuple[float, float]:
     spring_and_arb_roll_stiffness_r_nmpdeg = spring_roll_stiffness_r_nmpdeg + car.arb_r_nmpdeg
 
     # Equivalent spring rate for springs in series
-    total_roll_stiffness_f_nmpdeg = (spring_and_arb_roll_stiffness_f_nmpdeg * tire_roll_stiffness_f_nmpdeg) /\
-                                    (spring_and_arb_roll_stiffness_f_nmpdeg + tire_roll_stiffness_f_nmpdeg)
+    total_roll_stiffness_f_nmpdeg = (
+        spring_and_arb_roll_stiffness_f_nmpdeg * tire_roll_stiffness_f_nmpdeg) /\
+        (spring_and_arb_roll_stiffness_f_nmpdeg + tire_roll_stiffness_f_nmpdeg)
     total_roll_stiffness_r_nmpdeg = (spring_and_arb_roll_stiffness_r_nmpdeg * tire_roll_stiffness_r_nmpdeg) /\
                                     (spring_and_arb_roll_stiffness_r_nmpdeg + tire_roll_stiffness_r_nmpdeg)
 
@@ -379,48 +339,6 @@ def roll_axis_dimensions(car: VehicleParams):
         * ((car.cg_height_sprung_m - car.roll_center_height_f_m)
             - (car.cg_to_f_wheels_dist_m * np.tan(roll_axis_angle_rad)))
 
-
-def longitudinal_load_transfer_calculation(car: VehicleParams,
-                                           long_accel_mps2: float,
-                                           load_transfer_drag_r_n: float) -> float:
-    '''Returns the change in load for individual tires in the front and rear
-    longitudinal force is positive in acceleration, negative in deceleration
-    - Ignore load transfer from pitch angle
-    - Treats body as single point mass
-    '''
-    load_transfer_r_n = ((car.cg_height_total_m * long_accel_mps2) / car.cg_to_r_wheels_dist_m + load_transfer_drag_r_n)
-    return load_transfer_r_n / 2
-
-
-def lateral_load_transfer_calculation(lat_accel_mps2: float, car: VehicleParams):
-    ''''
-    Assumptions:
-    - Load transfer as a result of chassis roll/sprung mass cg change is ignored (small angles assumed)
-    - Front and rear roll rates are measured independently
-    - Chassis is infinitely stiff
-    - Tire deflection rates are included in roll rates
-    - Car is symmetric across it's longitudinal plane
-    - lateral acceleration is lateral relative to the coordinate frame of the chassis
-    '''
-
-    load_transfer_f_n = lat_accel_mps2 * car.lat_load_transfer_sensitivity_f_ns2pm
-    load_transfer_r_n = lat_accel_mps2 * car.lat_load_transfer_sensitivity_r_ns2pm
-
-    return load_transfer_f_n, load_transfer_r_n
-
-
-def roll_angle_calculation(lateral_accel_units: float, roll_gradient_units: float) -> float:
-    pass
-
-
-def pitch_angle_calculation(longitudinal_accel_units: float, pitch_gradient_untis: float) -> float:
-    pass
-
-
-def aero_forces_calculation(car: VehicleParams):
-    aero_drag_n = 0
-    load_transfer_drag_r_n = (car.center_of_pressure_height_m * aero_drag_n) / car.cg_to_r_wheels_dist_m
-    pass
 
 
 def main():
