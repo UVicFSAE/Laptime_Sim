@@ -51,19 +51,22 @@ class VehicleParameters:
         "motion_ratio_arb_r",
         "roll_center_height_f_m",
         "roll_center_height_r_m",
-        "static_camber_f_rad",
-        "static_camber_r_rad",
-        "static_toe_f_rad",
-        "static_toe_r_rad",
+        "static_incln_fl_rad",
+        "static_incln_rl_rad",
+        "static_toe_fl_rad",
+        "static_toe_rl_rad",
         "wheelrate_f_npm",
         "wheelrate_r_npm",
         "ride_rate_f_npm",
         "ride_rate_r_npm",
         "roll_gradient_radpg",
+        "steering_rack_speed_mmprad",
         "kinematic_file",
         "kinematic_data",
         "kinematics_l",
         "kinematics_r",
+        "roll_center_gain_bump_f",
+        "roll_center_gain_bump_r",
         "lat_load_transfer_sensitivity_f_ns2pm",
         "lat_load_transfer_sensitivity_r_ns2pm",
         "roll_gradient_radpg",
@@ -84,7 +87,7 @@ class VehicleParameters:
         "coeff_of_lift",
         "coeff_of_drag",
         "center_of_pressure_height_m",
-        "lift_distribution_long",
+        "aero_balance_f",
         "frontal_area_m2",
     ]
 
@@ -129,15 +132,18 @@ class VehicleParameters:
     motion_ratio_arb_r: float
     roll_center_height_f_m: float
     roll_center_height_r_m: float
-    static_camber_f_rad: float
-    static_camber_r_rad: float
-    static_toe_f_rad: float
-    static_toe_r_rad: float
-    # setup from csv file
+    static_incln_fl_rad: float
+    static_incln_rl_rad: float
+    static_toe_fl_rad: float
+    static_toe_rl_rad: float
+    # kinematics
     kinematic_file: str
     kinematic_data: KinematicData
     kinematics_l: KinematicEquations
     kinematics_r: KinematicEquations
+    roll_center_gain_bump_f: float
+    roll_center_gain_bump_r: float
+    steering_rack_speed_mmprad: float
     # calculated
     wheelrate_f_npm: float
     wheelrate_r_npm: float
@@ -165,7 +171,7 @@ class VehicleParameters:
     coeff_of_lift: float
     coeff_of_drag: float
     center_of_pressure_height_m: float
-    lift_distribution_long: float
+    aero_balance_f: float
     frontal_area_m2: float
 
     def __init__(self):
@@ -224,11 +230,14 @@ class VehicleParameters:
         self.arb_r_nmpdeg = config["arb_r_nmpdeg"]
         self.motion_ratio_arb_f = config["motion_ratio_arb_f"]
         self.motion_ratio_arb_r = config["motion_ratio_arb_r"]
-        self.static_camber_f_rad = np.deg2rad(config["static_camber_f_deg"])
-        self.static_camber_r_rad = np.deg2rad(config["static_camber_r_deg"])
-        self.static_toe_f_rad = np.deg2rad(config["static_toe_f_deg"])
-        self.static_toe_r_rad = np.deg2rad(config["static_toe_r_deg"])
+        self.static_incln_fl_rad = np.deg2rad(config["static_camber_f_deg"]) * -1
+        self.static_incln_rl_rad = np.deg2rad(config["static_camber_r_deg"]) * -1
+        self.static_toe_fl_rad = np.deg2rad(config["static_toe_in_f_deg"]) * -1
+        self.static_toe_rl_rad = np.deg2rad(config["static_toe_in_r_deg"]) * -1
         self.kinematic_file = config["kinematic_file"] or None
+        self.roll_center_gain_bump_f = config["roll_center_gain_bump_f"] or 0
+        self.roll_center_gain_bump_r = config["roll_center_gain_bump_r"] or 0
+        self.steering_rack_speed_mmprad = UnitConversion.mmprev_to_mmprad(config["steering_rack_speed_mmprev"])
 
         # Aero Parameters
         self.aero_installed = config["aero_installed"]
@@ -236,7 +245,7 @@ class VehicleParameters:
         self.coeff_of_lift = config["coeff_of_lift"]
         self.coeff_of_drag = config["coeff_of_drag"]
         self.center_of_pressure_height_m = config["center_of_pressure_height_m"]
-        self.lift_distribution_long = config["lift_distribution_long"]
+        self.aero_balance_f = config["aero_balance_f"]
         self.frontal_area_m2 = config["frontal_area_m2"]
 
     def define_calculated_vehicle_parameters(self):

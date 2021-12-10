@@ -1,3 +1,13 @@
+"""
+Module to aid with unit conversions specific to this repository
+
+Created: 2021
+Contributors: Nigel Swab
+"""
+
+from numpy import pi
+
+
 class UnitConversion:
     @staticmethod
     def psi_to_pa(psi: float) -> float:
@@ -38,3 +48,19 @@ class UnitConversion:
     @staticmethod
     def kg_to_lb(kg: float) -> float:
         return kg / 0.453592
+
+    @staticmethod
+    def kph_to_mps(kph: float) -> float:
+        return kph * 0.277778
+
+    @staticmethod
+    def mps_to_kph(mps: float) -> float:
+        return mps / 0.277778
+
+    @staticmethod
+    def mmprev_to_mmprad(mmprev: float) -> float:
+        return mmprev / (2 * pi)
+
+    @staticmethod
+    def mmprad_to_mmprev(mmprad: float) -> float:
+        return mmprad * 2 * pi

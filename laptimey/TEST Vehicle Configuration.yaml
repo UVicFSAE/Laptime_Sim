@@ -30,17 +30,22 @@ arb_f_nmpdeg: 100
 arb_r_nmpdeg: 300
 motion_ratio_arb_f: 1  # ARB Twist Angle / Body Roll Angle
 motion_ratio_arb_r: 1  # ARB Twist Angle / Body Roll Angle
-static_camber_f_deg: -0.781
-static_camber_r_deg: -0.1081
-static_toe_f_deg: -0.3
-static_toe_r_deg: 0.2
+static_camber_f_deg: -1
+static_camber_r_deg: -2
+static_toe_in_f_deg: -0.3
+static_toe_in_r_deg: 0.2
+
+# Kinematics
 kinematic_file: vehicle\steering_and_kinematics\KinSheetUV19.xlsx
+roll_center_gain_bump_f: -1.27
+roll_center_gain_bump_r: -1.27
+steering_rack_speed_mmprev: 87.9
 
 # Tire Parameters
 tire_model_f_version: 61
 tire_model_r_version: 61
-tire_model_f_filepath: C:\Users\Nigel Swab\Desktop\Laptime_Sim\laptimey\vehicle\tire_models\Hoosier-R25B-18.0x6.0 -7_w-rim.TIR
-tire_model_r_filepath: C:\Users\Nigel Swab\Desktop\Laptime_Sim\laptimey\vehicle\tire_models\Hoosier-R25B-18.0x6.0 -7_w-rim.TIR
+tire_model_f_filepath: C:\Users\Nigel Swab\Desktop\Laptime_Sim\laptimey\vehicle\tire_models\Hoosier-R25B-18.0x7.5 - 7in-rim - 43105.TIR
+tire_model_r_filepath: C:\Users\Nigel Swab\Desktop\Laptime_Sim\laptimey\vehicle\tire_models\Hoosier-R25B-18.0x7.5 - 7in-rim - 43105.TIR
 tire_rad_f_in: 9
 tire_rad_r_in: 9
 tire_spring_rate_f_lbpin: 637
@@ -54,8 +59,11 @@ air_density_kgm3: 1.2255
 coeff_of_lift: 3.376
 coeff_of_drag: 1.318
 center_of_pressure_height_m: 0.500  # TODO: Find the theoretical number from Jarno
-lift_distribution_long: 0.46
+aero_balance_f: 0.46
 frontal_area_m2: 1.212
+
+# Everything beyond this is optional for the time being
+#======================================================
 
 # Other or TBD
 brake_bias_f: 0.60

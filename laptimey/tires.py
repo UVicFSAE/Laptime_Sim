@@ -367,6 +367,10 @@ class MagicFormula(ABC):
         :return:
         '''
 
+        # return no forces/moments if there is not positive normal force
+        if Fz <= 0:
+            return 0, 0, 0, 0
+
         # Initializations
         dfz = (Fz - self.Fz0) / self.Fz0
         dpi = (tire_pressure - self.NOMPRES) / self.NOMPRES
@@ -824,17 +828,16 @@ if __name__ == "__main__":
     # Choose and load tire model
     qt_helper = Dialogs(__file__ + 'get TIR')
     filename = str(qt_helper.select_file_dialog(accepted_file_types='*.TIR'))
-    tire = Mf61()
-    tire.load_model_from_tir(filepath=filename)
+    tire = Mf61(filepath=filename)
 
     # Create test ranges for slip angles and ratios
     slip_angles_input = np.linspace(np.deg2rad(-12), np.deg2rad(12), num=100)
     slip_ratios_input = np.linspace(-0.2, 0.2, num=100)
     inclinations = [
         np.deg2rad(-1.5),
-        np.deg2rad(-0.5), 0,
-        np.deg2rad(0.5),
-        np.deg2rad(1.5)
+        # np.deg2rad(-0.5), 0,
+        # np.deg2rad(0.5),
+        # np.deg2rad(1.5)
     ]
 
     # Create forces to plot
