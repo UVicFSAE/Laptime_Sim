@@ -14,6 +14,8 @@ from scipy.optimize import curve_fit
 
 # TODO: Should probably add some try : excepts to calculate
 # TODO: Add more equations as necessary
+# TODO: Sort out what to do with covariance
+#  - especially when they can't be estimated
 
 
 class EquationFits(ABC):
@@ -36,7 +38,7 @@ class LinearFits(EquationFits):
         self.fit_type = fit_type
         self.fit_parameter = fit_parameter
         self.coefficients = np.ndarray
-        self.covariance = np.ndarray
+        # self.covariance = np.ndarray
 
         equations = {'linear1': LinearFits.linear1,
                      'linear2': LinearFits.linear2,
@@ -51,7 +53,7 @@ class LinearFits(EquationFits):
         return self.equation(input_data, *self.coefficients)
 
     def fit(self, independent_data: Series or list[Series], dependent_data: Series):
-        self.coefficients, self.covariance = curve_fit(self.equation, independent_data, dependent_data)
+        self.coefficients, _ = curve_fit(self.equation, independent_data, dependent_data)
 
     @staticmethod
     def linear1(x, p1=0, p2=0):

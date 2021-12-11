@@ -3,21 +3,26 @@
 Created: 2021
 Contributors: Nigel Swab
 """
+import pprint
+import re
 import sys
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 from pandas import DataFrame as df
+from pandas import Series
 from scipy import stats
 
 import vehicle_calculations as calc
 from lib.UnitConversions import UnitConversion
+from lib.fit_equations import LinearFits
 from lib.print_colour import printy
 from vehicle_model import VehicleParameters
 
 
 # style.use('seaborn')
-
+# TODO: Use filters and loc to better sort through data
 
 class YawMomentDiagram:
     __slots__ = [
@@ -37,16 +42,16 @@ class YawMomentDiagram:
     assume_symmetric_results: bool
 
     def __init__(
-        self,
-        car: VehicleParameters,
-        speed_kph: float,
-        chassis_slip_angle_limit_deg: float,
-        chassis_slip_steps: int,
-        steering_wheel_angle_limit_deg: float,
-        steering_steps: int,
-        lat_accel_tolerance_mps2: float,
-        relaxation_parameter: float = 0.8,
-        assume_symmetric_results=True,
+            self,
+            car: VehicleParameters,
+            speed_kph: float,
+            chassis_slip_angle_limit_deg: float,
+            chassis_slip_steps: int,
+            steering_wheel_angle_limit_deg: float,
+            steering_steps: int,
+            lat_accel_tolerance_mps2: float,
+            relaxation_parameter: float = 0.8,
+            assume_symmetric_results=True,
     ):
         # define instance attributes
         self.speed_mps = UnitConversion.kph_to_mps(speed_kph)
@@ -88,12 +93,12 @@ class YawMomentDiagram:
         #     start=steering_rack_limits_mm, stop=steering_rack_stop, num=int(steering_wheel_angle_steps))
 
     def yaw_moment_calc_iso(
-        self,
-        car: VehicleParameters,
-        lat_accel_convergence_tolerance_mps2: float,
-        relaxation_parameter: float,
-        long_accel: float = 0,
-        max_convergence_iters: int = 1000,
+            self,
+            car: VehicleParameters,
+            lat_accel_convergence_tolerance_mps2: float,
+            relaxation_parameter: float,
+            long_accel: float = 0,
+            max_convergence_iters: int = 1000,
     ) -> df:
 
         print("\nCalculating yaw moment diagram values...\n")
@@ -227,16 +232,16 @@ class YawMomentDiagram:
 
                     # calculate slip angles
                     slip_angle_fl_rad = (velocity_y_mps + yaw_rate_radps * car.cg_to_f_wheels_dist_m) / (
-                        velocity_x_mps - yaw_rate_radps * car.track_f_m / 2
+                            velocity_x_mps - yaw_rate_radps * car.track_f_m / 2
                     ) - toe_fl_rad
                     slip_angle_fr_rad = (velocity_y_mps + yaw_rate_radps * car.cg_to_f_wheels_dist_m) / (
-                        velocity_x_mps + yaw_rate_radps * car.track_f_m / 2
+                            velocity_x_mps + yaw_rate_radps * car.track_f_m / 2
                     ) - toe_fr_rad
                     slip_angle_rl_rad = (velocity_y_mps - yaw_rate_radps * car.cg_to_r_wheels_dist_m) / (
-                        velocity_x_mps - yaw_rate_radps * car.track_r_m / 2
+                            velocity_x_mps - yaw_rate_radps * car.track_r_m / 2
                     ) - toe_rl_rad
                     slip_angle_rr_rad = (velocity_y_mps - yaw_rate_radps * car.cg_to_r_wheels_dist_m) / (
-                        velocity_x_mps + yaw_rate_radps * car.track_r_m / 2
+                            velocity_x_mps + yaw_rate_radps * car.track_r_m / 2
                     ) - toe_rr_rad
 
                     # calculate wheel forces
@@ -307,42 +312,39 @@ class YawMomentDiagram:
                         )
 
                 yaw_moment_nm = (
-                    -car.cg_to_r_wheels_dist_m * tire_lat_forces_r_n
-                    + car.cg_to_f_wheels_dist_m * tire_lat_forces_f_n
-                    + mz_tires_nm
+                        -car.cg_to_r_wheels_dist_m * tire_lat_forces_r_n
+                        + car.cg_to_f_wheels_dist_m * tire_lat_forces_f_n
+                        + mz_tires_nm
                 )
 
                 # save data into a dictionary and list of dictionaries
                 results = {
                     "Steering Wheel Angle [rad]": steering_rack_travel_mm / car.steering_rack_speed_mmprad,
-                    "Steering Wheel Angle [deg]": np.rad2deg(steering_rack_travel_mm / car.steering_rack_speed_mmprad),
                     "Chassis Slip Angle [rad]": chassis_slip_angle_rad,
-                    "Chassis Slip Angle [deg]": np.rad2deg(chassis_slip_angle_rad),
                     "Lateral Acceleration [m/s^2]": lat_accel_mps2[-1],
-                    "Normalized Lateral Acceleration [g]": lat_accel_mps2[-1] / 9.81,
                     "Yaw Rate [rad/s]": yaw_rate_radps,
                     "Corner Radius [m]": np.abs(self.speed_mps ** 2 / lat_accel_mps2[-1]),
                     "Yaw Moment [Nm]": yaw_moment_nm,
-                    "Normalized Yaw Moment [-]": yaw_moment_nm / (car.weight_total_n * car.wheelbase_m),
                     "Relative Error [m/s^2]": rel_lat_accel_error_mps2,
                     "Front Lateral Force [N]": tire_lat_forces_f_n,
                     "Rear Lateral Force [N]": tire_lat_forces_r_n,
                     "Roll Angle [rad]": roll_angle_rad,
                     "Iterations until Convergence": convergence_iters,
                     "Yaw Acceleration [rad/s^2]": yaw_moment_nm / car.moi_yaw_kgm2,
+                    "Velocity [m/s]": self.speed_mps
                 }
                 # append results to list output data list
                 yaw_moment_output_data.append(results)
 
                 # append negative results to list if results are assumed to be symmetric
-                if self.assume_symmetric_results:
+                if self.assume_symmetric_results and (chassis_slip_angle_rad + steering_rack_travel_mm) != 0:
                     opp_results = results.copy()
                     for key, value in results.items():
                         opp_results[key] = (
                             -value
                             if (
-                                key not in ["Relative Error [m/s^2]", "Corner Radius [m]"]
-                                and chassis_slip_angle_rad != 0
+                                    key not in ["Relative Error [m/s^2]", "Corner Radius [m]"]
+                                    and chassis_slip_angle_rad != 0
                             )
                             else value
                         )
@@ -357,184 +359,526 @@ class YawMomentDiagram:
 
         return df(yaw_moment_output_data)
 
-    def key_performance_indicators(self, yaw_moment_data: df) -> dict[str:float]:
 
-        self.static_directional_stability_index(yaw_moment_data=yaw_moment_data)
-        self.control_force_index(yaw_moment_data=yaw_moment_data)
-        self.control_moment_index(yaw_moment_data=yaw_moment_data)
-        self.yaw_stability_index(yaw_moment_data=yaw_moment_data)
+class YawMomentConvertData:
 
-        # TODO: add interpolation for points
+    @classmethod
+    def _convert_yaw_moment_data_to_deg(cls, yaw_moment_data: df) -> df:
+        for column in yaw_moment_data:
+            if "[rad" in column:
+                yaw_moment_data[column] = np.rad2deg(yaw_moment_data[column])
+                yaw_moment_data.rename(columns={column: column.replace("rad", "°")}, inplace=True)
+            if "/rad" in column:
+                yaw_moment_data[column] = np.deg2rad(yaw_moment_data[column])
+                yaw_moment_data.rename(columns={column: column.replace("rad", "°")}, inplace=True)
+        return yaw_moment_data
 
-        max_lat_accel_mps2 = yaw_moment_data["Lateral Acceleration [m/s^2]"].max()
-        max_accel_index = yaw_moment_data["Lateral Acceleration [m/s^2]"].idxmax()
-        return {
-            "Max Lateral Acceleration [g]": max_lat_accel_mps2 / 9.81,
-            "Max Lateral Acceleration [m/s^2]": max_lat_accel_mps2,
-            "Minimum Radius [m]": yaw_moment_data["Corner Radius [m]"].min(),
-            "Spin Tendency [Nm]": yaw_moment_data["Yaw Moment [Nm]"].iloc[max_accel_index],
-            "Spin Tendency [-]": yaw_moment_data["Normalized Yaw Moment [-]"].iloc[max_accel_index],
-            "Max Yaw Moment [Nm]": yaw_moment_data["Yaw Moment [Nm]"].max(),
-            "Max Roll Angle [deg]": np.rad2deg(yaw_moment_data["Roll Angle [rad]"]),
+    @classmethod
+    def _convert_yaw_moment_data_to_rad(cls, yaw_moment_data: df) -> df:
+        for column in yaw_moment_data:
+            if "[rad" in column:
+                yaw_moment_data[column] = np.deg2rad(yaw_moment_data[column])
+                yaw_moment_data.rename(columns={column: column.replace("°", "rad")}, inplace=True)
+            if "/rad" in column:
+                yaw_moment_data[column] = np.rad2deg(yaw_moment_data[column])
+                yaw_moment_data.rename(columns={column: column.replace("°", "rad")}, inplace=True)
+        return yaw_moment_data
+
+    @classmethod
+    def _normalize_data(cls, yaw_moment_data: df, car: VehicleParameters) -> df:
+        for column in yaw_moment_data:
+            if "[m/s^2" in column:  # convert to g-force
+                yaw_moment_data[column] = yaw_moment_data[column] / 9.81
+                yaw_moment_data.rename(columns={column: column.replace("m/s^2", "g")}, inplace=True)
+            if "/m/s^2" in column:
+                yaw_moment_data[column] = yaw_moment_data[column] * 9.81
+                yaw_moment_data.rename(columns={column: column.replace("m/s^2", "g")}, inplace=True)
+            if "Nm" in column:  # normalize yaw moment
+                yaw_moment_data[column] = yaw_moment_data[column] / (car.weight_total_n * car.wheelbase_m)
+                yaw_moment_data.rename(columns={column: column.replace("Nm", "-")}, inplace=True)
+        return yaw_moment_data
+
+    @classmethod
+    def _denormalize_data(cls, yaw_moment_data: df, car: VehicleParameters) -> df:
+        for column in yaw_moment_data:
+            if "g" in column:  # convert to g-force
+                yaw_moment_data[column] = yaw_moment_data[column] * 9.81
+                yaw_moment_data.rename(columns={column: column.replace("g", "m/s^2")}, inplace=True)
+            if "/g" in column:
+                yaw_moment_data[column] = yaw_moment_data[column] / 9.81
+                yaw_moment_data.rename(columns={column: column.replace("g", "m/s^2")}, inplace=True)
+            if "Nm" in column:  # normalize yaw moment
+                yaw_moment_data[column] = yaw_moment_data[column] * (car.weight_total_n * car.wheelbase_m)
+                yaw_moment_data.rename(columns={column: column.replace("-", "Nm")}, inplace=True)
+        return yaw_moment_data
+
+    @classmethod
+    def convert_velocity_to_kph(cls, yaw_moment_data: df) -> df:
+        for column in yaw_moment_data:
+            if "m/s" in column:
+                yaw_moment_data[column] = UnitConversion.mps_to_kph(yaw_moment_data[column])
+                yaw_moment_data.rename(columns={column: column.replace("m/s", "km/hr")}, inplace=True)
+        return yaw_moment_data
+
+    @classmethod
+    def convert_velocity_to_mps(cls, yaw_moment_data: df) -> df:
+        for column in yaw_moment_data:
+            if "km/hr" in column:
+                yaw_moment_data[column] = UnitConversion.kph_to_mps(yaw_moment_data[column])
+                yaw_moment_data.rename(columns={column: column.replace("km/hr", "m/s")}, inplace=True)
+        return yaw_moment_data
+
+
+class YawMomentAnalysis(YawMomentConvertData):
+    yaw_moment_data: df
+    units: dict
+
+    def __init__(self, yaw_moment_data: df, to_deg: bool, to_normalized: bool, car: VehicleParameters):
+        self.yaw_moment_data = yaw_moment_data
+        self.is_normalized = to_normalized
+
+        self.units = {
+            'Moment': "-" if to_normalized else "Nm",
+            'Acceleration': "g" if to_normalized else "m/s^2",
+            'Angle': "°" if to_deg else "rad",
         }
 
-    @staticmethod
-    def find_key_df_indices(yaw_moment_data: df) -> tuple[int, int, int]:
-        max_lat_accel_index = yaw_moment_data["Lateral Acceleration [m/s^2"].idxmax()
-        max_trim_lat_index = 0  # TODO: Figure out a good way to do this
-        min_steer_and_slip_index = np.abs(
-            yaw_moment_data[["Steering Wheel Angle [rad]", "Chassis Slip Angle [rad]"]].sum(axis=1)
-        ).idxmin()
-        return max_lat_accel_index, max_trim_lat_index, min_steer_and_slip_index
+        # convert and/or normalize data if needed
+        self.convert_yaw_moment_data(yaw_moment_data=self.yaw_moment_data, car=car,
+                                     to_deg=to_deg, to_normalized=to_normalized)
 
-    def calculate_performance_indexes(self, yaw_moment_data: df):
-        self.control_force_index(yaw_moment_data=yaw_moment_data)
-        self.control_moment_index(yaw_moment_data=yaw_moment_data)
-        self.static_directional_stability_index(yaw_moment_data=yaw_moment_data)
-        self.yaw_stability_index(yaw_moment_data=yaw_moment_data)
-        yaw_moment_data.sort_index(inplace=True)
-        print("hi")
+    @classmethod
+    def extract_units(cls, yaw_moment_data: df) -> dict[str: str]:
+        list_of_units = [str(re.findall(r'\[.*?\]', column)) for column in yaw_moment_data.columns]
+        cls.check_unit_consistency(list_of_units=list_of_units)
+        return {
+            'Moment': "-" if any("-" in unit for unit in list_of_units) else "Nm",
+            'Acceleration': "g" if any("g" in unit for unit in list_of_units) else "m/s^2",
+            'Angle': "°" if any("°" in unit for unit in list_of_units) else "rad",
+        }
 
-    @staticmethod
-    def static_directional_stability_index(yaw_moment_data: df):
+    @classmethod
+    def check_unit_consistency(cls, list_of_units: list[str]) -> None:
+        if any("°" in unit for unit in list_of_units) and any("rad" in unit for unit in list_of_units):
+            raise ValueError('There are multiple units used for angles in this dataframe! Please use\n'
+                             'convert_yaw_moment_data() from YawMomentConvertData first\n')
+        if any("g" in unit for unit in list_of_units) and any("m/s^2" in unit for unit in list_of_units):
+            raise ValueError('There are multiple units used for acceleration or moments in this dataframe!\n'
+                             'Please use convert_yaw_moment_data() from YawMomentConvertData first\n')
+        if any("-" in unit for unit in list_of_units) and any("Nm" in unit for unit in list_of_units):
+            raise ValueError('There are multiple units used for acceleration or moments in this dataframe!\n'
+                             'Please use convert_yaw_moment_data() from YawMomentConvertData first\n')
+
+    @classmethod
+    def convert_yaw_moment_data(cls, yaw_moment_data: df, car: VehicleParameters,
+                                to_deg: bool, to_normalized: bool):
+        # convert and/or normalize data if needed
+        yaw_moment_data = cls._convert_yaw_moment_data_to_deg(
+            yaw_moment_data=yaw_moment_data) if to_deg else cls._convert_yaw_moment_data_to_rad(
+            yaw_moment_data=yaw_moment_data)
+        yaw_moment_data = cls._normalize_data(
+            yaw_moment_data=yaw_moment_data, car=car) if to_normalized else cls._denormalize_data(
+            yaw_moment_data=yaw_moment_data, car=car)
+
+    # @staticmethod
+    # def key_performance_indicators(self, key_metric_df: df) -> dict[str:float]:
+    #
+    #     # TODO: add interpolation for points
+    #     max_lat_row = key_metric_df.loc["Maximum Lateral Acceleration"]
+    #     max_trimmed_row = key_metric_df.loc["Maximum Trimmed Lateral Acceleration"]
+    #     straight_travel_row = key_metric_df.loc["Straight Travel"]
+    #
+    #     return {
+    #         "Max Lateral Acceleration [g]": max,
+    #         "Spin Tendency [Nm]": yaw_moment_data["Yaw Moment [Nm]"].loc[max_accel_index],
+    #         "Steering Sensitivity [g/deg]": steering_sensitivity_straight_gpdeg,
+    #         "Stability Index [Nm/deg]": yaw_moment_data,
+    #         "Max Yaw Moment [Nm]": yaw_moment_data["Yaw Moment [Nm]"].max(),
+    #         "Max Roll Angle [deg]": np.rad2deg(yaw_moment_data["Roll Angle [rad]"]),
+    #         "Minimum Radius [m]": yaw_moment_data["Corner Radius [m]"].min(),
+    #
+    #     }
+
+    # def find_key_df_indices(self, yaw_moment_data: df) -> tuple[int, int, int]:
+    #     max_lat_accel_index = yaw_moment_data["Lateral Acceleration [m/s^2]"].idxmax()
+    #     max_trim_lat_index = self.trimmed_left(yaw_moment_data, max_lat_accel_index)
+    #     min_steer_and_slip_index = (
+    #         np.abs(yaw_moment_data[["Steering Wheel Angle [rad]", "Chassis Slip Angle [rad]"]]).sum(axis=1)
+    #     ).idxmin()
+    #     return max_lat_accel_index, max_trim_lat_index, min_steer_and_slip_index
+    #
+    # @staticmethod
+    # def key_metric_summary_dict(self, key_metric_point_data: Series) -> dict:
+    #     return {"Max Lateral Acceleration [m/s^2]": key_metric_point_data["Lateral Acceleration [m/s^2]"],
+    #             "Spin Tendency [Nm]": key_metric_point_data["Yaw Moment [Nm]"],
+    #
+    #             "Minimum Radius [m]": key_metric_point_data["Corner Radius [m]"]
+    #
+    #             }
+
+    def trimmed_right(self):
+        max_accel_index = self.yaw_moment_data[f"Lateral Acceleration [{self.units['Acceleration']}]"].idxmax()
+        yaw_at_max = self.yaw_moment_data[f"Yaw Moment [{self.units['Moment']}]"].loc[max_accel_index]
+
+        index_below_0_yaw, index_above_0_yaw = \
+            self.steer_angle_lat_accel_intercepts() if yaw_at_max <= 0 else self.chassis_slip_lat_accel_intercepts()
+
+        yaw_moment_data_at_trim = {}
+        min_positive_yaw = self.yaw_moment_data[f"Yaw Moment [{self.units['Moment']}]"].loc[index_above_0_yaw]
+        min_negative_yaw = self.yaw_moment_data[f"Yaw Moment [{self.units['Moment']}]"].loc[index_below_0_yaw]
+        for column in self.yaw_moment_data.columns:
+            dependent_data_w_neg_yaw = self.yaw_moment_data[column].loc[index_below_0_yaw]
+            dependent_data_w_pos_yaw = self.yaw_moment_data[column].loc[index_above_0_yaw]
+            trim_lin_fit = LinearFits(fit_type='linear1', fit_parameter=column)
+            trim_lin_fit.fit(Series([min_negative_yaw, min_positive_yaw]),
+                             Series([dependent_data_w_neg_yaw, dependent_data_w_pos_yaw]))
+            yaw_moment_data_at_trim[column] = trim_lin_fit.calculate(0)
+
+        pprint.pprint(yaw_moment_data_at_trim)
+
+    def chassis_slip_lat_accel_intercepts(self) -> list[int, int]:
+        """
+        If yaw moment is positive at max accel, a line of constant chassis slip will likely be the
+        right most point (with the highest lateral acceleration)
+        """
+        list_of_const_slip_line_data = self.extract_const_slip_lines(yaw_moment_data=self.yaw_moment_data,
+                                                                     units=self.units)
+
+        # trim_indices_df = df()
+        # trim_indices_dict = {}
+        pos_moment_index = 0
+        neg_moment_index = 0
+        combined_max_accel = 0
+        max_accel_w_neg_moment_index = 0
+        max_accel_w_pos_moment_index = 0
+
+        for const_slip_line_data in list_of_const_slip_line_data:
+            # TODO: Could probs extract this process out to be used for both methods
+            # ymd_trim_filter = (self.yaw_moment_data[f"Lateral Acceleration [{self.units['Acceleration']}]"] >= 0) \
+            #                   & (self.yaw_moment_data[f"Steering Wheel Angle [{self.units['Angle']}]"] <= 0) \
+            #                   & (self.yaw_moment_data[f"Chassis Slip Angle [{self.units['Angle']}]"] <= 0)
+            # const_slip_line_data = const_slip_line_data[ymd_trim_filter]
+            const_slip_line_data = const_slip_line_data.sort_values(f"Yaw Moment [{self.units['Moment']}]")
+
+            # TODO: Could probs generalize and extract this loop out to be used for both methods
+            for index, yaw_moment in const_slip_line_data[f"Yaw Moment [{self.units['Moment']}]"].items():
+                neg_moment_index = index if yaw_moment <= 0 else neg_moment_index
+                if yaw_moment > 0:
+                    pos_moment_index = index
+                    break
+            const_slip_line_lat_accel = self.yaw_moment_data[f"Lateral Acceleration [{self.units['Acceleration']}]"]
+            combined_accel = const_slip_line_lat_accel.loc[neg_moment_index] \
+                             + const_slip_line_lat_accel.loc[pos_moment_index]
+            if combined_accel > combined_max_accel:
+                combined_max_accel = combined_accel
+                max_accel_w_neg_moment_index = neg_moment_index
+                max_accel_w_pos_moment_index = pos_moment_index
+
+        return [max_accel_w_neg_moment_index, max_accel_w_pos_moment_index]
+
+    def steer_angle_lat_accel_intercepts(self) -> list[int, int]:
+        """
+        If yaw moment is negative at max accel, a line of constant chassis slip will likely be the
+        right most point (with the highest lateral acceleration)
+        """
+        list_of_const_steer_line_data = self.extract_const_steer_lines(yaw_moment_data=self.yaw_moment_data,
+                                                                       units=self.units)
+        lateral_acceleration = self.yaw_moment_data[
+            f"Lateral Acceleration [{self.units['Acceleration']}]"]
+
+        pos_moment_index = 0
+        neg_moment_index = 0
+        combined_max_accel = 0
+        max_accel_w_neg_moment_index = 0
+        max_accel_w_pos_moment_index = 0
+
+        for const_steer_line_data in list_of_const_steer_line_data:
+            # TODO: Could probs extract this process out to be used for both methods
+            # ymd_trim_filter = (self.yaw_moment_data[f"Lateral Acceleration [{self.units['Acceleration']}]"] >= 0) \
+            #                   & (self.yaw_moment_data[f"Steering Wheel Angle [{self.units['Angle']}]"] <= 0) \
+            #                   & (self.yaw_moment_data[f"Chassis Slip Angle [{self.units['Angle']}]"] <= 0)
+            # const_steer_line_data = const_steer_line_data[ymd_trim_filter]
+            const_steer_line_data = const_steer_line_data.sort_values(f"Yaw Moment [{self.units['Moment']}]")
+
+            # TODO: Could probs generalize and extract this loop out to be used for both methods
+            for index, yaw_moment in const_steer_line_data[f"Yaw Moment [{self.units['Moment']}]"].items():
+                neg_moment_index = index if yaw_moment <= 0 else neg_moment_index
+                if yaw_moment > 0:
+                    pos_moment_index = index
+                    break
+
+            combined_accel = lateral_acceleration.loc[neg_moment_index] \
+                             + lateral_acceleration.loc[pos_moment_index]
+            if combined_accel > combined_max_accel:
+                combined_max_accel = combined_accel
+                max_accel_w_neg_moment_index = neg_moment_index
+                max_accel_w_pos_moment_index = pos_moment_index
+
+        return [max_accel_w_neg_moment_index, max_accel_w_pos_moment_index]
+
+    # @staticmethod
+    # def trimmed_left(yaw_moment_data: df, max_lat_accel_index: int):
+    #
+    #     # Filter to ensure positive accel, wheels turned left, with a small yaw moment
+    #     ymd_trim_filt = (yaw_moment_data["Lateral Acceleration [m/s^2]"] >= 0) & \
+    #                     (yaw_moment_data["Steering Wheel Angle [rad]"] <= 0) & \
+    #                     (np.abs(yaw_moment_data["Yaw Moment [Nm]"]) < np.abs(
+    #                         yaw_moment_data["Yaw Moment [Nm]"].loc[max_lat_accel_index]))
+    #     yaw_moment_data = yaw_moment_data[ymd_trim_filt]
+    #
+    #     max_lat = 0
+    #     max_lat_accel_line_yaw_intercept = df()
+    #
+    #     if yaw_moment_data["Yaw Moment [Nm]"].loc[max_lat_accel_index] > 0:
+    #         yaw_moment_data.sort_values(["Chassis Slip Angle [rad]", "Steering Wheel Angle [rad]"], inplace=True)
+    #         list_of_chassis_slip_angles = np.round(yaw_moment_data["Chassis Slip Angle [rad]"], decimals=8).unique()
+    #
+    #         for chassis_slip_angle in list_of_chassis_slip_angles:
+    #             chassis_slip_line_yaw_intercept = yaw_moment_data[
+    #                 np.round(yaw_moment_data["Steering Wheel Angle [rad]"], decimals=8) == chassis_slip_angle
+    #                 ]
+    #             if chassis_slip_line_yaw_intercept["Lateral Acceleration [g]"].max() > max_lat:
+    #                 max_lat = chassis_slip_line_yaw_intercept["Lateral Acceleration [g]"].max()
+    #                 max_lat_accel_line_yaw_intercept = chassis_slip_line_yaw_intercept
+    #     else:
+    #         # do something, will be on const delta line
+    #         # filter to positive g and negative steer angles
+    #
+    #         # get steer angle at max lat accel, and use the indexes from the nearest to 0 yaw moment to for interpolation
+    #         # Wish there was a better way... surely there is...
+    #         list_of_steer_angles = np.round(yaw_moment_data["Steering Wheel Angle [rad]"], decimals=8).unique()
+    #         for steer_angle in list_of_steer_angles:
+    #             steer_line_yaw_intercept = yaw_moment_data[
+    #                 np.round(yaw_moment_data["Steering Wheel Angle [rad]"], decimals=8) == steer_angle
+    #                 ]
+    #             if steer_line_yaw_intercept["Lateral Acceleration [g]"].max() > max_lat:
+    #                 max_lat = steer_line_yaw_intercept["Lateral Acceleration [g]"].max()
+    #                 max_lat_accel_line_yaw_intercept = steer_line_yaw_intercept
+    #         # max_lat_accel_line_yaw_intercept.drop()
+    #         return max_lat_accel_line_yaw_intercept
+
+    def calculate_performance_indicators(self):
+        self.calculate_control_force_indices()
+        self.calculate_control_moment_indices()
+        self.calculate_static_directional_stability_indices()
+        self.calculate_yaw_stability_indices()
+
+    def calculate_static_directional_stability_indices(self) -> None:
         """
         slope of the yaw moment given a change in chassis slip angle for constant steer angle (dN/dBeta)
         Also referred to as directional spring/weathercock effect as described on pg. 228 in
         Race Car Vehicle Dynamics
         """
-        yaw_moment_data.sort_values(["Steering Wheel Angle [rad]", "Chassis Slip Angle [rad]"], inplace=True)
-        list_of_steer_angles = np.round(yaw_moment_data["Steering Wheel Angle [rad]"], decimals=8).unique()
+        self.yaw_moment_data.sort_values(
+            [f"Steering Wheel Angle [{self.units['Angle']}]", f"Chassis Slip Angle [{self.units['Angle']}]"],
+            inplace=True)
+        list_of_steer_angles = np.round(self.yaw_moment_data[f"Steering Wheel Angle [{self.units['Angle']}]"],
+                                        decimals=8).unique()
 
         static_directional_stability_nmpdeg = []
         for steer_angle in list_of_steer_angles:
-            stability_index_data = yaw_moment_data[
-                np.round(yaw_moment_data["Steering Wheel Angle [rad]"], decimals=8) == steer_angle
-            ]
+            stability_index_data = self.yaw_moment_data[
+                np.round(self.yaw_moment_data[f"Steering Wheel Angle [{self.units['Angle']}]"],
+                         decimals=8) == steer_angle
+                ]
             stability_index_data = (
-                stability_index_data[["Yaw Moment [Nm]", "Chassis Slip Angle [deg]"]].copy(deep=True).diff(axis=0)
+                stability_index_data[
+                    [f"Yaw Moment [{self.units['Moment']}]", f"Chassis Slip Angle [{self.units['Angle']}]"]].copy(
+                    deep=True).diff(axis=0)
             )
             static_directional_stability_nmpdeg.extend(
-                stability_index_data["Yaw Moment [Nm]"] / stability_index_data["Chassis Slip Angle [deg]"]
+                stability_index_data[f"Yaw Moment [{self.units['Moment']}]"] / stability_index_data[
+                    f"Chassis Slip Angle [{self.units['Angle']}]"]
             )
 
-        yaw_moment_data["Static Directional Stability [Nm/deg]"] = static_directional_stability_nmpdeg
+        self.yaw_moment_data[
+            f"Static Directional Stability [{self.units['Moment']}/{self.units['Angle']}]"] = \
+            static_directional_stability_nmpdeg
 
-    @staticmethod
-    def control_force_index(yaw_moment_data: df):
+    def calculate_control_force_indices(self) -> None:
         """
         Slope of lateral acceleration at a given chassis slip angle (dAy/ddelta)
         Indicates turn-in capability of the vehicle
         """
-        yaw_moment_data.sort_values(["Chassis Slip Angle [rad]", "Steering Wheel Angle [rad]"], inplace=True)
-        list_of_chassis_slip_angles = np.round(yaw_moment_data["Chassis Slip Angle [rad]"], decimals=8).unique()
+        self.yaw_moment_data.sort_values(
+            [f"Chassis Slip Angle [{self.units['Angle']}]", f"Steering Wheel Angle [{self.units['Angle']}]"],
+            inplace=True)
+        list_of_chassis_slip_angles = np.round(self.yaw_moment_data[f"Chassis Slip Angle [{self.units['Angle']}]"],
+                                               decimals=8).unique()
 
         control_index_gpdeg = []
         for chassis_slip_angle in list_of_chassis_slip_angles:
-            control_index_data = yaw_moment_data[
-                np.round(yaw_moment_data["Chassis Slip Angle [rad]"], decimals=8) == chassis_slip_angle
-            ]
+            control_index_data = self.yaw_moment_data[
+                np.round(self.yaw_moment_data[f"Chassis Slip Angle [{self.units['Angle']}]"],
+                         decimals=8) == chassis_slip_angle
+                ]
             control_index_data = (
-                control_index_data[["Normalized Lateral Acceleration [g]", "Steering Wheel Angle [deg]"]]
-                .copy(deep=True)
-                .diff(axis=0)
+                control_index_data[[f"Lateral Acceleration [{self.units['Acceleration']}]",
+                                    f"Steering Wheel Angle [{self.units['Angle']}]"]]
+                    .copy(deep=True)
+                    .diff(axis=0)
             )
             control_index_gpdeg.extend(
-                control_index_data["Normalized Lateral Acceleration [g]"]
-                / control_index_data["Steering Wheel Angle [deg]"]
+                control_index_data[f"Lateral Acceleration [{self.units['Acceleration']}]"]
+                / control_index_data[f"Steering Wheel Angle [{self.units['Angle']}]"]
             )
 
-        yaw_moment_data["Control Force Index [g/deg]"] = control_index_gpdeg
+        self.yaw_moment_data[
+            f"Control Force Index [{self.units['Acceleration']}/{self.units['Angle']}]"] = control_index_gpdeg
 
-    @staticmethod
-    def control_moment_index(yaw_moment_data: df):
+    def calculate_control_moment_indices(self):
         """
         Slope of yaw moment at a given chassis slip angle (dN/ddelta)
         Indicates turn-in capability of the vehicle
         """
-        yaw_moment_data.sort_values(["Chassis Slip Angle [rad]", "Steering Wheel Angle [rad]"], inplace=True)
-        list_of_chassis_slip_angles = np.round(yaw_moment_data["Chassis Slip Angle [rad]"], decimals=8).unique()
+        self.yaw_moment_data.sort_values(
+            [f"Chassis Slip Angle [{self.units['Angle']}]", f"Steering Wheel Angle [{self.units['Angle']}]"],
+            inplace=True)
+        list_of_chassis_slip_angles = np.round(self.yaw_moment_data[f"Chassis Slip Angle [{self.units['Angle']}]"],
+                                               decimals=8).unique()
 
         control_index_nmpdeg = []
         for chassis_slip_angle in list_of_chassis_slip_angles:
-            control_index_data = yaw_moment_data[
-                np.round(yaw_moment_data["Chassis Slip Angle [rad]"], decimals=8) == chassis_slip_angle
-            ]
+            control_index_data = self.yaw_moment_data[
+                np.round(self.yaw_moment_data[f"Chassis Slip Angle [{self.units['Angle']}]"],
+                         decimals=8) == chassis_slip_angle
+                ]
             control_index_data = (
-                control_index_data[["Yaw Moment [Nm]", "Steering Wheel Angle [deg]"]].copy(deep=True).diff(axis=0)
+                control_index_data[
+                    [f"Yaw Moment [{self.units['Moment']}]", f"Steering Wheel Angle [{self.units['Angle']}]"]].copy(
+                    deep=True).diff(axis=0)
             )
             control_index_nmpdeg.extend(
-                control_index_data["Yaw Moment [Nm]"] / control_index_data["Steering Wheel Angle [deg]"]
+                control_index_data[f"Yaw Moment [{self.units['Moment']}]"] / control_index_data[
+                    f"Steering Wheel Angle [{self.units['Angle']}]"]
             )
 
-        yaw_moment_data["Control Moment Index [Nm/deg]"] = control_index_nmpdeg
+        self.yaw_moment_data[
+            f"Control Moment Index [{self.units['Moment']}/{self.units['Angle']}]"] = control_index_nmpdeg
 
-    @staticmethod
-    def yaw_stability_index(yaw_moment_data: df):
+    def calculate_yaw_stability_indices(self):
         """
         Slope of yaw moment curve (dN/dAy) for constant steer
         """
-        yaw_moment_data.sort_values(["Steering Wheel Angle [rad]", "Chassis Slip Angle [rad]"], inplace=True)
-        list_of_steer_angles = np.round(yaw_moment_data["Steering Wheel Angle [rad]"], decimals=8).unique()
+        self.yaw_moment_data.sort_values(
+            [f"Steering Wheel Angle [{self.units['Angle']}]", f"Chassis Slip Angle [{self.units['Angle']}]"],
+            inplace=True)
+        list_of_steer_angles = np.round(self.yaw_moment_data[f"Steering Wheel Angle [{self.units['Angle']}]"],
+                                        decimals=8).unique()
 
         stability_index = []
         for steer_angle in list_of_steer_angles:
-            stability_index_data = yaw_moment_data[
-                np.round(yaw_moment_data["Steering Wheel Angle [rad]"], decimals=8) == steer_angle
-            ]
+            stability_index_data = self.yaw_moment_data[
+                np.round(self.yaw_moment_data[f"Steering Wheel Angle [{self.units['Angle']}]"],
+                         decimals=8) == steer_angle
+                ]
             stability_index_data = (
-                stability_index_data[["Normalized Yaw Moment [-]", "Normalized Lateral Acceleration [g]"]]
-                .copy(deep=True)
-                .diff(axis=0)
+                stability_index_data[
+                    [f"Yaw Moment [{self.units['Moment']}]", f"Lateral Acceleration [{self.units['Acceleration']}]"]]
+                    .copy(deep=True)
+                    .diff(axis=0)
             )
             stability_index.extend(
-                stability_index_data["Normalized Yaw Moment [-]"]
-                / stability_index_data["Normalized Lateral Acceleration [g]"]
+                stability_index_data[f"Yaw Moment [{self.units['Moment']}]"]
+                / stability_index_data[f"Lateral Acceleration [{self.units['Acceleration']}]"]
             )
 
-        yaw_moment_data["Stability Index [-]"] = stability_index
+        self.yaw_moment_data[f"Stability Index [{self.units['Moment']}/{self.units['Acceleration']}]"] = stability_index
 
-    @staticmethod
-    def plot_yaw_moment_diagram(yaw_moment_data: df, speed_mps: float, in_si_units: bool = False):
+    @classmethod
+    def extract_const_slip_lines(cls, yaw_moment_data: df, units: Optional[dict[str, str]]) -> list[df]:
+        if not units:
+            cls.extract_units(yaw_moment_data=yaw_moment_data)
 
-        lateral_accel = "Lateral Acceleration [m/s^2]" if in_si_units else "Normalized Lateral Acceleration [g]"
-        yaw_moment = "Yaw Moment [Nm]" if in_si_units else "Normalized Yaw Moment [-]"
-        angle_decimals = ".2f" if in_si_units else ".0f"
-        angle_units = "rad" if in_si_units else "°"
-        speed_units = "m/s" if in_si_units else "km/hr"
+        yaw_moment_data.sort_values(
+            [f"Chassis Slip Angle [{units['Angle']}]", f"Steering Wheel Angle [{units['Angle']}]"], inplace=True)
+        chassis_slip_angles = np.round(yaw_moment_data[f"Chassis Slip Angle [{units['Angle']}]"], decimals=8).unique()
 
-        figure, axes = plt.subplots(nrows=1, ncols=1)
-        yaw_moment_data.sort_values(["Chassis Slip Angle [rad]", "Steering Wheel Angle [rad]"], inplace=True)
-        chassis_slip_angles_rad = np.round(yaw_moment_data["Chassis Slip Angle [rad]"], decimals=4).unique()
-        steering_wheel_angles_rad = np.round(yaw_moment_data["Steering Wheel Angle [rad]"], decimals=4).unique()
-
-        for chassis_slip in chassis_slip_angles_rad:
+        const_slip_lines_list = [df()]
+        for chassis_slip in chassis_slip_angles:
             const_slip_line_data = yaw_moment_data[
-                np.round(yaw_moment_data["Chassis Slip Angle [rad]"], decimals=4) == chassis_slip
-            ]
-            const_slip_line_data = const_slip_line_data.sort_values("Steering Wheel Angle [rad]")
-            (line,) = axes.plot(
-                const_slip_line_data[lateral_accel], const_slip_line_data[yaw_moment], color="b", linewidth=0.5
-            )
-            if chassis_slip == chassis_slip_angles_rad[-1]:
-                chassis_slip = np.rad2deg(chassis_slip) if not in_si_units else chassis_slip
-                line.set_label(f"Constant Chassis Slip Angle (±{chassis_slip: {angle_decimals}}{angle_units})")
+                np.round(yaw_moment_data[f"Chassis Slip Angle [{units['Angle']}]"], decimals=8) == chassis_slip
+                ]
+            const_slip_line_data = const_slip_line_data.sort_values(f"Steering Wheel Angle [{units['Angle']}]")
+            const_slip_lines_list.append(const_slip_line_data)
+        del const_slip_lines_list[0]
+        return const_slip_lines_list
 
+    @classmethod
+    def extract_const_steer_lines(cls, yaw_moment_data: df, units: Optional[dict[str, str]]) -> list[df]:
+        if not units:
+            cls.extract_units(yaw_moment_data=yaw_moment_data)
+
+        yaw_moment_data.sort_values(
+            [f"Steering Wheel Angle [{units['Angle']}]", f"Chassis Slip Angle [{units['Angle']}]"], inplace=True)
+        steering_wheel_angles_rad = np.round(yaw_moment_data[f"Steering Wheel Angle [{units['Angle']}]"],
+                                             decimals=8).unique()
+
+        const_steer_lines_list = [df()]
         for steer_angle in steering_wheel_angles_rad:
             const_steer_line_data = yaw_moment_data[
-                np.round(yaw_moment_data["Steering Wheel Angle [rad]"], decimals=4) == steer_angle
-            ]
-            const_steer_line_data = const_steer_line_data.sort_values("Chassis Slip Angle [rad]")
-            (line,) = axes.plot(
-                const_steer_line_data[lateral_accel], const_steer_line_data[yaw_moment], color="r", linewidth=0.5
-            )
-            if steer_angle == steering_wheel_angles_rad[-1]:
-                steer_angle = np.rad2deg(steer_angle) if not in_si_units else steer_angle
-                line.set_label(f"Constant Steering Wheel Angle (±{steer_angle: {angle_decimals}}{angle_units})")
+                np.round(yaw_moment_data[f"Steering Wheel Angle [{units['Angle']}]"], decimals=8) == steer_angle
+                ]
+            const_steer_line_data = const_steer_line_data.sort_values(f"Chassis Slip Angle [{units['Angle']}]")
+            const_steer_lines_list.append(const_steer_line_data)
+        del const_steer_lines_list[0]
+        return const_steer_lines_list
 
-        title_speed = speed_mps if in_si_units else UnitConversion.mps_to_kph(speed_mps)
+    @classmethod
+    def plot_yaw_moment_diagram(cls,
+                                yaw_moment_data: df,
+                                car: VehicleParameters,
+                                to_normalized: bool = False,
+                                to_deg: bool = False,
+                                to_kph: bool = False):
+
+        units = {
+            'Moment': "-" if to_normalized else "Nm",
+            'Acceleration': "g" if to_normalized else "m/s^2",
+            'Angle': "°" if to_deg else "rad",
+        }
+        angle_decimals_format_str = '.0f' if to_deg else '.2f'
+
+        data_units = cls.extract_units(yaw_moment_data=yaw_moment_data)
+        if data_units != units:
+            cls.convert_yaw_moment_data(yaw_moment_data, car, to_deg, to_normalized)
+
+        figure, axes = plt.subplots(nrows=1, ncols=1)
+
+        list_of_const_slip_line_data = cls.extract_const_slip_lines(yaw_moment_data=yaw_moment_data, units=units)
+        list_of_const_steer_line_data = cls.extract_const_steer_lines(yaw_moment_data=yaw_moment_data, units=units)
+
+        # TODO: Break out function for plotting these
+        chassis_slip_max = yaw_moment_data[f"Chassis Slip Angle [{units['Angle']}]"].max()
+        for const_slip_line_data in list_of_const_slip_line_data:
+            # const_slip_line_data = const_slip_line_data.sort_values(f"Steering Wheel Angle [{units['Angle']}]")
+            (line,) = axes.plot(
+                const_slip_line_data[f"Lateral Acceleration [{units['Acceleration']}]"],
+                const_slip_line_data[f"Yaw Moment [{units['Moment']}]"], color="b", linewidth=0.5
+            )
+            chassis_slip = const_slip_line_data[f"Chassis Slip Angle [{units['Angle']}]"].max()
+            if chassis_slip == chassis_slip_max:
+                line.set_label(
+                    f"Constant Chassis Slip Angle (±{chassis_slip: {angle_decimals_format_str}}{units['Angle']})")
+
+        steer_max = yaw_moment_data[f"Steering Wheel Angle [{units['Angle']}]"].max()
+        for const_steer_line_data in list_of_const_steer_line_data:
+            # const_steer_line_data = const_steer_line_data.sort_values(f"Chassis Slip Angle [{units['Angle']}]")
+            (line,) = axes.plot(
+                const_steer_line_data[f"Lateral Acceleration [{units['Acceleration']}]"],
+                const_steer_line_data[f"Yaw Moment [{units['Moment']}]"], color="r", linewidth=0.5
+            )
+            steer_angle = const_steer_line_data[f"Steering Wheel Angle [{units['Angle']}]"].max()
+            if steer_angle == steer_max:
+                line.set_label(
+                    f"Constant Steering Wheel Angle (±{steer_angle: {angle_decimals_format_str}}{units['Angle']})")
+
+        speed_mps = yaw_moment_data["Velocity [m/s]"].iloc[0]
+        speed_units = "[km/hr]" if to_kph else "[m/s]"
+        title_speed = UnitConversion.mps_to_kph(speed_mps) if to_kph else speed_mps
         plt.title(f"Yaw Moment Diagram at {title_speed: .0f} {speed_units}")
-        plt.xlabel("Lateral Acceleration [m/s^2]") if in_si_units else plt.xlabel("Lateral Acceleration [g]")
-        plt.ylabel("Yaw Moment [Nm]") if in_si_units else plt.ylabel("Yaw Moment [-]")
+        plt.xlabel(f"Lateral Acceleration [{units['Angle']}]")
+        plt.ylabel(f"Yaw Moment [{units['Moment']}]")
         plt.minorticks_on()
         plt.grid(which="minor", linewidth=0.2)
         plt.grid(which="major", linewidth=0.4)
@@ -559,9 +903,15 @@ def main():
         assume_symmetric_results=True,
     )
     ymd_data = ymd.yaw_moment_calc_iso(car=car, lat_accel_convergence_tolerance_mps2=0.00001, relaxation_parameter=0.8)
-    ymd.calculate_performance_indexes(yaw_moment_data=ymd_data)
-    # ymd.plot_yaw_moment_diagram(yaw_moment_data=ymd_data, speed_mps=ymd.speed_mps, in_si_units=True)
-    ymd.plot_yaw_moment_diagram(yaw_moment_data=ymd_data, speed_mps=ymd.speed_mps, in_si_units=False)
+    yaw_moment_analysis = YawMomentAnalysis(yaw_moment_data=ymd_data, car=car, to_deg=True, to_normalized=True)
+    yaw_moment_analysis.calculate_performance_indicators()
+    # yaw_moment_analysis.plot_yaw_moment_diagram(yaw_moment_data=ymd_data,
+    #                                             car=car,
+    #                                             to_deg=True,
+    #                                             to_normalized=True,
+    #                                             to_kph=True)
+    yaw_moment_analysis.trimmed_right()
+
     print("hi")
 
 
