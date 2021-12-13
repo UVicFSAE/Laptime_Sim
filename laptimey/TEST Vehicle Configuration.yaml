@@ -37,8 +37,8 @@ static_toe_in_r_deg: 0.2
 
 # Kinematics
 kinematic_file: vehicle\steering_and_kinematics\KinSheetUV19.xlsx
-roll_center_gain_bump_f: -1.27
-roll_center_gain_bump_r: -1.27
+roll_center_gain_bump_f: 0
+roll_center_gain_bump_r: 0
 steering_rack_speed_mmprev: 87.9
 
 # Tire Parameters
