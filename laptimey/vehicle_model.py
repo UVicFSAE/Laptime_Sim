@@ -261,7 +261,7 @@ class VehicleParameters:
         # Mass definitions
         self.mass_total_kg = self.mass_car_kg + self.mass_driver_kg
         self.weight_total_n = self.mass_total_kg * 9.81
-        self.mass_sprung_kg = self.mass_total_kg - 2 * self.mass_unsprung_f_kg + 2 * self.mass_unsprung_r_kg
+        self.mass_sprung_kg = self.mass_total_kg - 2 * self.mass_unsprung_f_kg - 2 * self.mass_unsprung_r_kg
         self.weight_sprung_n = self.mass_sprung_kg * 9.81
 
     def static_wheel_load_definitions(self) -> None:

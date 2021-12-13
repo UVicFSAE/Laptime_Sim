@@ -2,8 +2,8 @@ SETUP_NAME: Test
 
 # Inertial Properties
 # TODO: Use lb's instead of mass for now as we're more familiar with that
-mass_driver_lb: 0
-mass_car_lb: 612
+mass_driver_lb: 170
+mass_car_lb: 460
 mass_unsprung_f_lb: 23.1
 mass_unsprung_r_lb: 23.1
 mass_distribution_f: 0.474
