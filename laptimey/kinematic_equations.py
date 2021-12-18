@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
 from pandas import DataFrame as df, read_excel
+from scipy.interpolate import interp2d
 
 from lib.fit_equations import EquationFits, PolyCurve, PolySurface
 from lib.print_colour import printy as print_colour
@@ -144,8 +145,6 @@ class KinematicData:
                 self.right_side_kinematic_tables[table].columns *= -1
             elif table in ["r_incln_f", "r_incln_r"]:
                 self.right_side_kinematic_tables[table].iloc[:, 0] *= -1
-            elif table in ["k_incln_r", "k_toe_r"]:
-                pass
 
 
 class KinematicEquations:
@@ -155,13 +154,14 @@ class KinematicEquations:
     k_toe_r: EquationFits
     r_incln_f: EquationFits
     r_incln_r: EquationFits
+    interp: bool
 
     def __init__(
         self,
         kinematic_table: dict[str:df],
         kin_incln_f_sfit: str = "poly33",
         kin_incln_r_cfit: str = "poly2",
-        kin_toe_f_sfit: str = "poly22",
+        kin_toe_f_sfit: str = "poly14",
         kin_toe_r_cfit: str = "poly2",
         roll_incln_f_cfit: str = "poly2",
         roll_incln_r_cfit: str = "poly2",
@@ -283,14 +283,14 @@ class KinematicEquations:
     def prepare_kin_surface_data(data: df) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
         # Extract the first row of data (Steering Rack Travel [m]), skipping the column & row label
-        steering_rack_data_m = data.columns[1:].to_numpy()
+        steering_rack_data_mm = data.columns[1:].to_numpy()
         # Extract first column of data (Bump Travel [m])
         bump_travel_data_m = data.iloc[:, 0].to_numpy()
         # Extract camber/toe data
         z = data.iloc[:, 1:].to_numpy()
 
         # Create a 2D mesh
-        Y, X = np.meshgrid(steering_rack_data_m, bump_travel_data_m)  # Y = Rack Travel [mm], X = Bump [mm]
+        Y, X = np.meshgrid(steering_rack_data_mm, bump_travel_data_m)  # Y = Rack Travel [mm], X = Bump [mm]
         # Flatten 2D mesh for equation fitting
         x = X.flatten().astype("float64")
         y = Y.flatten().astype("float64")
@@ -335,6 +335,8 @@ class KinematicEquations:
         ax.plot(x, y, marker=".")
         ax.plot(x, y_pred, c="r", linestyle="-")
         # TODO: Add labels and titles
+        ax.set_xlabel(x_param)
+        ax.set_ylabel(y_param)
         plt.show()
 
 

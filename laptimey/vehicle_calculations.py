@@ -33,10 +33,10 @@ def lateral_load_transfer_left_calculation(lat_accel_mps2: float, car: VehiclePa
 
 def wheel_load_check(wheel_load_l_n: float, wheel_load_r_n: float) -> tuple[float, float]:
     if wheel_load_l_n < 0:
-        wheel_load_r_n -= wheel_load_l_n
+        # wheel_load_r_n -= wheel_load_l_n
         wheel_load_l_n = 0
     if wheel_load_r_n < 0:
-        wheel_load_l_n -= wheel_load_r_n
+        # wheel_load_l_n -= wheel_load_r_n
         wheel_load_r_n = 0
     return wheel_load_l_n, wheel_load_r_n
 

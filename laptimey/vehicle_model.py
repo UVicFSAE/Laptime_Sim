@@ -59,7 +59,6 @@ class VehicleParameters:
         "wheelrate_r_npm",
         "ride_rate_f_npm",
         "ride_rate_r_npm",
-        "roll_gradient_radpg",
         "steering_rack_speed_mmprad",
         "kinematic_file",
         "kinematic_data",
@@ -69,6 +68,7 @@ class VehicleParameters:
         "roll_center_gain_bump_r",
         "lat_load_transfer_sensitivity_f_ns2pm",
         "lat_load_transfer_sensitivity_r_ns2pm",
+        "lat_load_trans_distr_f",
         "roll_gradient_radpg",
         "tire_f",
         "tire_r",
@@ -82,6 +82,10 @@ class VehicleParameters:
         "tire_rad_r_m",
         "tire_rad_loaded_f_m",
         "tire_rad_loaded_r_m",
+        "tire_LMUY_f",
+        "tire_LMUY_r",
+        "tire_LMUX_f",
+        "tire_LMUX_r",
         "aero_installed",
         "air_density_kgm3",
         "coeff_of_lift",
@@ -149,6 +153,7 @@ class VehicleParameters:
     wheelrate_r_npm: float
     ride_rate_f_npm: float
     ride_rate_r_npm: float
+    lat_load_trans_distr_f: float
     lat_load_transfer_sensitivity_f_ns2pm: float
     lat_load_transfer_sensitivity_r_ns2pm: float
     roll_gradient_radpg: float
@@ -164,6 +169,10 @@ class VehicleParameters:
     tire_rad_r_m: float
     tire_pressure_f_pa: float
     tire_pressure_r_pa: float
+    tire_LMUY_f: float
+    tire_LMUY_r: float
+    tire_LMUX_f: float
+    tire_LMUX_r: float
 
     # AERODYNAMIC PROPERTIES
     aero_installed: float
@@ -219,6 +228,10 @@ class VehicleParameters:
         self.tire_spring_r_npm = UnitConversion.lbpin_to_npm(config["tire_spring_rate_r_lbpin"])
         self.tire_pressure_f_pa = UnitConversion.psi_to_pa(config["tire_pressure_f_psi"])
         self.tire_pressure_r_pa = UnitConversion.psi_to_pa(config["tire_pressure_r_psi"])
+        self.tire_LMUY_f = config["tire_LMUY_f"]
+        self.tire_LMUY_r = config["tire_LMUY_r"]
+        self.tire_LMUX_f = config["tire_LMUX_f"]
+        self.tire_LMUX_r = config["tire_LMUX_r"]
         # TODO: Add spring rate model to correlate pressure to spring rate
 
         # Suspension Setup Parameters
@@ -342,31 +355,27 @@ class VehicleParameters:
     def calculate_roll_stiffness(self) -> tuple[float, float]:
         """calculates the spring rates of the wheel and tire with respect"""
         # Convert ARB rate to account for motion ratio
-        self.arb_f_nmpdeg = self.arb_f_nmpdeg * self.motion_ratio_arb_f ** 2
-        self.arb_r_nmpdeg = self.arb_r_nmpdeg * self.motion_ratio_arb_r ** 2
+        arb_f_nmprad = np.rad2deg(self.arb_f_nmpdeg) * self.motion_ratio_arb_f ** 2
+        arb_r_nmprad = np.rad2deg(self.arb_r_nmpdeg) * self.motion_ratio_arb_r ** 2
 
-        # math.tan(math.radians(1)) is used to convert into terms of 1 degree of body roll
-        spring_roll_stiffness_f_nmpdeg = (self.track_f_m ** 2 * np.tan(np.deg2rad(1)) * self.wheelrate_f_npm) / 2
-        spring_roll_stiffness_r_nmpdeg = (self.track_r_m ** 2 * np.tan(np.deg2rad(1)) * self.wheelrate_r_npm) / 2
+        # np.tan(1) is used to convert into terms of 1 rad of body roll
+        spring_roll_stiffness_f_nmprad = (self.track_f_m ** 2 * np.tan(1) * self.wheelrate_f_npm) / 2
+        spring_roll_stiffness_r_nmprad = (self.track_r_m ** 2 * np.tan(1) * self.wheelrate_r_npm) / 2
 
-        # math.tan(math.radians(1)) is used to convert into terms of 1 degree of body roll
-        tire_roll_stiffness_f_nmpdeg = (self.track_f_m ** 2 * np.tan(np.deg2rad(1)) * self.tire_spring_f_npm) / 2
-        tire_roll_stiffness_r_nmpdeg = (self.track_r_m ** 2 * np.tan(np.deg2rad(1)) * self.tire_spring_r_npm) / 2
+        # np.tan(1) is used to convert into terms of 1 rad of body roll
+        tire_roll_stiffness_f_nmprad = (self.track_f_m ** 2 * np.tan(1) * self.tire_spring_f_npm) / 2
+        tire_roll_stiffness_r_nmprad = (self.track_r_m ** 2 * np.tan(1) * self.tire_spring_r_npm) / 2
 
-        # Assumes that ARB rate is defined as Nm/deg of body roll
-        spring_and_arb_roll_stiffness_f_nmpdeg = spring_roll_stiffness_f_nmpdeg + self.arb_f_nmpdeg
-        spring_and_arb_roll_stiffness_r_nmpdeg = spring_roll_stiffness_r_nmpdeg + self.arb_r_nmpdeg
+        # Springs in parallel
+        spring_and_arb_roll_stiffness_f_nmprad = spring_roll_stiffness_f_nmprad + arb_f_nmprad
+        spring_and_arb_roll_stiffness_r_nmprad = spring_roll_stiffness_r_nmprad + arb_r_nmprad
 
         # Equivalent spring rate for springs in series
-        total_roll_stiffness_f_nmpdeg = (spring_and_arb_roll_stiffness_f_nmpdeg * tire_roll_stiffness_f_nmpdeg) / (
-                spring_and_arb_roll_stiffness_f_nmpdeg + tire_roll_stiffness_f_nmpdeg
+        total_roll_stiffness_f_nmprad = (spring_and_arb_roll_stiffness_f_nmprad * tire_roll_stiffness_f_nmprad) / (
+                spring_and_arb_roll_stiffness_f_nmprad + tire_roll_stiffness_f_nmprad
         )
-        total_roll_stiffness_r_nmpdeg = (spring_and_arb_roll_stiffness_r_nmpdeg * tire_roll_stiffness_r_nmpdeg) / (
-                spring_and_arb_roll_stiffness_r_nmpdeg + tire_roll_stiffness_r_nmpdeg
-        )
-
-        total_roll_stiffness_f_nmprad, total_roll_stiffness_r_nmprad = np.rad2deg(
-            [total_roll_stiffness_f_nmpdeg, total_roll_stiffness_r_nmpdeg]
+        total_roll_stiffness_r_nmprad = (spring_and_arb_roll_stiffness_r_nmprad * tire_roll_stiffness_r_nmprad) / (
+                spring_and_arb_roll_stiffness_r_nmprad + tire_roll_stiffness_r_nmprad
         )
 
         return total_roll_stiffness_f_nmprad, total_roll_stiffness_r_nmprad
@@ -449,6 +458,9 @@ class VehicleParameters:
                 + unsprung_load_transfer_sensitivity_r_npg
         )
 
+        self.lat_load_trans_distr_f = lat_load_transfer_sensitivity_f_npg / (
+                    lat_load_transfer_sensitivity_f_npg + lat_load_transfer_sensitivity_r_npg)
+
         # converted to lateral load change in newtons per m/s^2 of lateral acceleration
         self.lat_load_transfer_sensitivity_f_ns2pm = lat_load_transfer_sensitivity_f_npg / 9.81
         self.lat_load_transfer_sensitivity_r_ns2pm = lat_load_transfer_sensitivity_r_npg / 9.81
@@ -470,6 +482,9 @@ class VehicleParameters:
                 raise AttributeError(
                     f"Define {tires} model version ({tire_model_version}) does not exist " f"in tires.py module"
                 )
+        self.tire_f.LMUY, self.tire_f.LMUX = self.tire_LMUY_f, self.tire_LMUX_f
+        self.tire_r.LMUY, self.tire_r.LMUX = self.tire_LMUY_r, self.tire_LMUX_r
+
 
     def kinematic_definitions(self) -> None:
         if not self.kinematic_file:

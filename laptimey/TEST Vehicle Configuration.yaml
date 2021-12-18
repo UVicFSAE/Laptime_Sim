@@ -1,13 +1,15 @@
+# https://www.cloudbees.com/blog/yaml-tutorial-everything-you-need-get-started
+
 SETUP_NAME: Test
 
 # Inertial Properties
-# TODO: Use lb's instead of mass for now as we're more familiar with that
-mass_driver_lb: 170
+
+mass_driver_lb: 180
 mass_car_lb: 460
 mass_unsprung_f_lb: 23.1
 mass_unsprung_r_lb: 23.1
-mass_distribution_f: 0.474
-cg_height_total_m: 0.305  # Includes driver ->TODO: Make dependent on driver mass, currently assumed same for all drivers
+mass_distribution_f: 0.5
+cg_height_total_m: 0.305
 moi_roll_kgm2: 16.264
 moi_yaw_kgm2: 97.00
 moi_pitch_kgm2: 88.385
@@ -16,29 +18,29 @@ moi_pitch_kgm2: 88.385
 track_f_in: 48
 track_r_in: 46
 wheelbase_in: 61
-roll_center_height_f_m: 0.0250
-roll_center_height_r_m: 0.0250
-rideheight_f_m: 0  #TODO: Add ride height functionality and definition. Ride height should also effect roll center height
-rideheight_r_m: 0  #TODO: Add ride height functionality and definition. Ride height should also effect roll center height
+roll_center_height_f_m: 0.030
+roll_center_height_r_m: 0.020
+rideheight_f_m: 0
+rideheight_r_m: 0
 
 # Suspension Setup Parameters
 spring_f_lbpin: 250  # lb/in
 spring_r_lbpin: 300  # lb/in
 motion_ratio_f: 0.9  # Suspension Travel / Wheel Travel
 motion_ratio_r: 0.9  # Suspension Travel / Wheel Travel
-arb_f_nmpdeg: 100
-arb_r_nmpdeg: 300
+arb_f_nmpdeg: 200
+arb_r_nmpdeg: 400
 motion_ratio_arb_f: 1  # ARB Twist Angle / Body Roll Angle
 motion_ratio_arb_r: 1  # ARB Twist Angle / Body Roll Angle
-static_camber_f_deg: -1
-static_camber_r_deg: -2
+static_camber_f_deg: -1.2
+static_camber_r_deg: -1.7
 static_toe_in_f_deg: -0.3
-static_toe_in_r_deg: 0.2
+static_toe_in_r_deg: 0.3
 
 # Kinematics
 kinematic_file: vehicle\steering_and_kinematics\KinSheetUV19.xlsx
-roll_center_gain_bump_f: 0
-roll_center_gain_bump_r: 0
+roll_center_gain_bump_f: -1.27
+roll_center_gain_bump_r: -1.27
 steering_rack_speed_mmprev: 87.9
 
 # Tire Parameters
@@ -50,15 +52,19 @@ tire_rad_f_in: 9
 tire_rad_r_in: 9
 tire_spring_rate_f_lbpin: 637
 tire_spring_rate_r_lbpin: 637
-tire_pressure_f_psi: 10
-tire_pressure_r_psi: 10
+tire_pressure_f_psi: 10.5
+tire_pressure_r_psi: 11.5
+tire_LMUY_f: 0.59  # Tire force scaling coefficient -> generally found to be between 0.6 - 0.7
+tire_LMUY_r: 0.59  # Tire force scaling coefficient -> generally found to be between 0.6 - 0.7
+tire_LMUX_f: 0.59  # Tire force scaling coefficient -> generally found to be between 0.6 - 0.7
+tire_LMUX_r: 0.59  # Tire force scaling coefficient -> generally found to be between 0.6 - 0.7
 
 # Aerodynamic Parameters
 aero_installed: True
 air_density_kgm3: 1.2255
 coeff_of_lift: 3.376
 coeff_of_drag: 1.318
-center_of_pressure_height_m: 0.500  # TODO: Find the theoretical number from Jarno
+center_of_pressure_height_m: 0.500
 aero_balance_f: 0.46
 frontal_area_m2: 1.212
 
