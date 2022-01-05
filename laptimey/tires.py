@@ -547,7 +547,8 @@ class Mf61(MagicFormula):
 
         # Computational time not worth recalculating Fy with 0 inclination_angle given small inclination_angle angles
         Fyp0 = Fy
-        # TODO: Test to see how much of a difference the 0 inclination_angle Fy makes
+
+        # Recalculaton of Fy at gamma = 0 can be done, but makes negligble difference
         # Fyp0, By, Cy, SVy, SHy, Kya = self.f_y(alpha, kappa, gamma, Fz, dfz, dpi)
 
         # alpha_m = alpha when disregarding transient effects

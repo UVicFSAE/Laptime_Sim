@@ -15,9 +15,9 @@ class VehicleSweepLimits:
     #TODO: Pull out conversions in lists
 
     # Mass Parameters
-    mass_car_kg = [UnitConversion.lb_to_kg(400), UnitConversion.lb_to_kg(650)]
-    mass_driver_kg = [40, 100]
-    mass_unsprung_f_kg = [6, 16]
+    # mass_car_kg = [UnitConversion.lb_to_kg(400), UnitConversion.lb_to_kg(600)]
+    # mass_driver_kg = [40, 100]
+    # mass_unsprung_f_kg = [6, 16]
     cg_height_total_m = [UnitConversion.in_to_m(6), UnitConversion.in_to_m(14)]
     mass_distribution_f = [.35, .65]
 

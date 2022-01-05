@@ -50,6 +50,8 @@ def pitch_angle_calculation(longitudinal_accel_units: float, pitch_gradient_unts
 
 
 def aerodynamic_wheel_loads_n(speed_mps: float, car: VehicleParameters) -> tuple[float, float]:
+    #TODO: modify to comply with ISO coordinates
+    # use v_x instead of just v as the input
     if not car.aero_installed:
         return 0, 0
 
