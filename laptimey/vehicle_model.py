@@ -4,11 +4,12 @@ This module is used to create and store all vehicle model data in classes
 
 Created 2021, Contributors: Nigel Swab
 """
-import numpy as np
+from numpy import rad2deg, deg2rad, cos, tan, arctan
+from dataclasses import dataclass
 
 from kinematic_equations import KinematicData, KinematicEquations
 from lib import pyqt_helper
-from lib.UnitConversions import UnitConversion
+from lib import UnitConversion
 from tires import MagicFormula, Mf52, Mf61
 
 
@@ -243,10 +244,10 @@ class VehicleParameters:
         self.arb_r_nmpdeg = config["arb_r_nmpdeg"]
         self.motion_ratio_arb_f = config["motion_ratio_arb_f"]
         self.motion_ratio_arb_r = config["motion_ratio_arb_r"]
-        self.static_incln_fl_rad = np.deg2rad(config["static_camber_f_deg"]) * -1
-        self.static_incln_rl_rad = np.deg2rad(config["static_camber_r_deg"]) * -1
-        self.static_toe_fl_rad = np.deg2rad(config["static_toe_in_f_deg"]) * -1
-        self.static_toe_rl_rad = np.deg2rad(config["static_toe_in_r_deg"]) * -1
+        self.static_incln_fl_rad = deg2rad(config["static_camber_f_deg"]) * -1
+        self.static_incln_rl_rad = deg2rad(config["static_camber_r_deg"]) * -1
+        self.static_toe_fl_rad = deg2rad(config["static_toe_in_f_deg"]) * -1
+        self.static_toe_rl_rad = deg2rad(config["static_toe_in_r_deg"]) * -1
         self.kinematic_file = config["kinematic_file"] or None
         self.roll_center_gain_bump_f = config["roll_center_gain_bump_f"] or 0
         self.roll_center_gain_bump_r = config["roll_center_gain_bump_r"] or 0
@@ -331,10 +332,10 @@ class VehicleParameters:
         return sprung_mass_distribution_f, sprung_mass_distribution_r
 
     def calculate_roll_axis_to_cg_dist_perp_m(self) -> float:
-        roll_axis_angle_rad = np.arctan((self.roll_center_height_f_m - self.roll_center_height_r_m) / self.wheelbase_m)
-        return np.cos(roll_axis_angle_rad) * (
+        roll_axis_angle_rad = arctan((self.roll_center_height_f_m - self.roll_center_height_r_m) / self.wheelbase_m)
+        return cos(roll_axis_angle_rad) * (
                 (self.cg_height_sprung_m - self.roll_center_height_f_m)
-                - (self.cg_to_f_wheels_dist_m * np.tan(roll_axis_angle_rad))
+                - (self.cg_to_f_wheels_dist_m * tan(roll_axis_angle_rad))
         )
 
     def roll_gradient_definition(self) -> None:
@@ -355,16 +356,16 @@ class VehicleParameters:
     def calculate_roll_stiffness(self) -> tuple[float, float]:
         """calculates the spring rates of the wheel and tire with respect"""
         # Convert ARB rate to account for motion ratio
-        arb_f_nmprad = np.rad2deg(self.arb_f_nmpdeg) * self.motion_ratio_arb_f ** 2
-        arb_r_nmprad = np.rad2deg(self.arb_r_nmpdeg) * self.motion_ratio_arb_r ** 2
+        arb_f_nmprad = rad2deg(self.arb_f_nmpdeg) * self.motion_ratio_arb_f ** 2
+        arb_r_nmprad = rad2deg(self.arb_r_nmpdeg) * self.motion_ratio_arb_r ** 2
 
         # np.tan(1) is used to convert into terms of 1 rad of body roll
-        spring_roll_stiffness_f_nmprad = (self.track_f_m ** 2 * np.tan(1) * self.wheelrate_f_npm) / 2
-        spring_roll_stiffness_r_nmprad = (self.track_r_m ** 2 * np.tan(1) * self.wheelrate_r_npm) / 2
+        spring_roll_stiffness_f_nmprad = (self.track_f_m ** 2 * tan(1) * self.wheelrate_f_npm) / 2
+        spring_roll_stiffness_r_nmprad = (self.track_r_m ** 2 * tan(1) * self.wheelrate_r_npm) / 2
 
         # np.tan(1) is used to convert into terms of 1 rad of body roll
-        tire_roll_stiffness_f_nmprad = (self.track_f_m ** 2 * np.tan(1) * self.tire_spring_f_npm) / 2
-        tire_roll_stiffness_r_nmprad = (self.track_r_m ** 2 * np.tan(1) * self.tire_spring_r_npm) / 2
+        tire_roll_stiffness_f_nmprad = (self.track_f_m ** 2 * tan(1) * self.tire_spring_f_npm) / 2
+        tire_roll_stiffness_r_nmprad = (self.track_r_m ** 2 * tan(1) * self.tire_spring_r_npm) / 2
 
         # Springs in parallel
         spring_and_arb_roll_stiffness_f_nmprad = spring_roll_stiffness_f_nmprad + arb_f_nmprad
@@ -485,7 +486,6 @@ class VehicleParameters:
         self.tire_f.LMUY, self.tire_f.LMUX = self.tire_LMUY_f, self.tire_LMUX_f
         self.tire_r.LMUY, self.tire_r.LMUX = self.tire_LMUY_r, self.tire_LMUX_r
 
-
     def kinematic_definitions(self) -> None:
         if not self.kinematic_file:
             qt_helper = pyqt_helper.Dialogs(__file__ + 'Get Kinematics File')
@@ -494,6 +494,48 @@ class VehicleParameters:
         kin_tables = KinematicData(self.kinematic_file)
         self.kinematics_l = KinematicEquations(kin_tables.left_side_kinematic_tables)
         self.kinematics_r = KinematicEquations(kin_tables.right_side_kinematic_tables)
+
+
+@dataclass
+class VehicleSweepLimits:
+    """
+        Comment the parameters you don't want to sweep and change sweep limits as
+        desired for running yaw_momenty sweeps
+        """
+
+    # Mass Parameters
+    mass_car_kg = UnitConversion.lb_to_kg([400, 600])
+    mass_driver_kg = [40, 100]
+    mass_unsprung_f_kg = [6, 16]
+    cg_height_total_m = UnitConversion.in_to_m([6, 14])
+    mass_distribution_f = [.35, .65]
+
+    # Dimension Attributes
+    track_f_m = UnitConversion.in_to_m([42, 52])
+    track_r_m = UnitConversion.in_to_m([42, 52])
+    wheelbase_m = [1.525, UnitConversion.in_to_m(70)]  # comp rules min = 1.525
+    roll_center_height_f_m = [0.01, 0.04]
+    roll_center_height_r_m = [0.01, 0.04]
+
+    spring_f_npm = UnitConversion.lbpin_to_npm([250, 550])
+    spring_r_npm = UnitConversion.lbpin_to_npm([250, 550])
+    motion_ratio_f = [0.9, 1.10]
+    motion_ratio_r = [0.9, 1.10]
+    arb_f_nmpdeg = [0, 600]
+    arb_r_nmpdeg = [0, 600]
+    # motion_ratio_arb_f = [1, 1]
+    # motion_ratio_arb_r = [1, 1]
+    static_incln_fl_rad = deg2rad([-3, 3])
+    static_incln_rl_rad = deg2rad([-3, 3])
+    static_toe_fl_rad = deg2rad([-3, 3])
+    static_toe_rl_rad = deg2rad([-3, 3])
+
+    tire_pressure_f_pa = UnitConversion.psi_to_pa([8, 14])
+    tire_pressure_r_pa =  UnitConversion.psi_to_pa([8, 14])
+
+    # aero_installed = [False, True]
+    aero_balance_f = [0.4, 0.6]
+    coeff_of_lift = [3, 4]
 
 
 if __name__ == "__main__":

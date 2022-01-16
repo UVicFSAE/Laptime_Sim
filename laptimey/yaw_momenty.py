@@ -8,12 +8,15 @@ import errno
 import os
 import re
 import sys
+import warnings
 from datetime import datetime
 from math import isnan
 from pprint import pprint
 from time import perf_counter
 from typing import Optional
+from matplotlib import use as plt_use
 
+plt_use('Qt5Agg')  # Need to set backend before importing pyplot
 import matplotlib.pyplot as plt
 import numpy as np
 from pandas import DataFrame as df
@@ -21,21 +24,20 @@ from pandas import Series, concat
 from scipy import stats
 from matplotlib.pyplot import cm
 from matplotlib import colors
+import plotly.express as px
 
 
 import vehicle_calculations as calc
-from lib.UnitConversions import UnitConversion
+from lib import UnitConversion
 from lib.fit_equations import LinearFits
 from lib.print_colour import printy
-from vehicle_model import VehicleParameters
-from yaw_moment_sweep_limits import VehicleSweepLimits
-
+from vehicle_model import VehicleParameters, VehicleSweepLimits
 
 # style.use('seaborn')
 # TODO: Use filters and loc to better sort through data
 # TODO: reduce any repeated variable instance (especially cars) to reduce memory useage
 # TODO: Replace lists with tuples, especially for repetitions
-# TODO: Remoce as many '.' as possible
+# TODO: Remove as many '.' as possible
 
 
 class YawMomentDiagram:
@@ -88,11 +90,13 @@ class YawMomentDiagram:
         steering_rack_stop = -steering_rack_limits_mm
 
         # define instance attributes containing sweeps of chassis slip angles and steering
-        self.chassis_slip_angles_rad = tuple(np.linspace(
-            start=chassis_slip_angle_limits_rad,
-            stop=chassis_slip_angle_stop,
-            num=(int(np.round(chassis_slip_steps / 2)) if assume_symmetric_results else int(chassis_slip_steps)),
-        ))
+        self.chassis_slip_angles_rad = tuple(
+            np.linspace(
+                start=chassis_slip_angle_limits_rad,
+                stop=chassis_slip_angle_stop,
+                num=(int(np.round(chassis_slip_steps / 2)) if assume_symmetric_results else int(chassis_slip_steps)),
+            )
+        )
 
         if to_normal_distr_steer:
             # prepare non-linear rack travel to avoid stacking at tire saturation
@@ -101,9 +105,9 @@ class YawMomentDiagram:
             pp = np.linspace(*bounds_for_range, num=steering_steps)
             self.steering_rack_travels_mm = tuple(distribution.ppf(pp))
         else:
-            self.steering_rack_travels_mm = tuple(np.linspace(
-                start=-steering_rack_limits_mm, stop=steering_rack_limits_mm, num=int(steering_steps)
-            ))
+            self.steering_rack_travels_mm = tuple(
+                np.linspace(start=-steering_rack_limits_mm, stop=steering_rack_limits_mm, num=int(steering_steps))
+            )
 
     def yaw_moment_calc_iso(
         self,
@@ -342,10 +346,18 @@ class YawMomentDiagram:
                     )
 
                     # convert and sum tire forces into chassis frame of reference
-                    tire_lat_forces_f_n = np.cos(toe_fl_rad) * fy_fl_n + np.cos(toe_fr_rad) * fy_fr_n \
-                                          + np.sin(toe_fl_rad) * fx_fl_n + np.sin(toe_fr_rad) * fx_fr_n
-                    tire_lat_forces_r_n = np.cos(toe_rl_rad) * fy_rl_n + np.cos(toe_rr_rad) * fy_rr_n \
-                                          + np.sin(toe_rl_rad) * fx_rl_n + np.sin(toe_rr_rad) * fx_rr_n
+                    tire_lat_forces_f_n = (
+                        np.cos(toe_fl_rad) * fy_fl_n
+                        + np.cos(toe_fr_rad) * fy_fr_n
+                        + np.sin(toe_fl_rad) * fx_fl_n
+                        + np.sin(toe_fr_rad) * fx_fr_n
+                    )
+                    tire_lat_forces_r_n = (
+                        np.cos(toe_rl_rad) * fy_rl_n
+                        + np.cos(toe_rr_rad) * fy_rr_n
+                        + np.sin(toe_rl_rad) * fx_rl_n
+                        + np.sin(toe_rr_rad) * fx_rr_n
+                    )
 
                     # TODO: add longitudinal forces, include those in long and lat forces in chassis frame
 
@@ -768,9 +780,9 @@ class YawMomentAnalysis(YawMomentConvertData):
             f"Trimmed Lateral Acceleration [{self.units['Acceleration']}]": yaw_moment_data_at_trim[
                 f"Lateral Acceleration [{self.units['Acceleration']}]"
             ],
-            f"Yaw Velocity at Trim [{self.units['Angle']}/s]": yaw_moment_data_at_trim
-            [f"Yaw Rate [{self.units['Angle']}/s]"]
-            ,
+            f"Yaw Velocity at Trim [{self.units['Angle']}/s]": yaw_moment_data_at_trim[
+                f"Yaw Rate [{self.units['Angle']}/s]"
+            ],
             f"Steering Sensitivity [{self.units['Moment']}/{self.units['Angle']}]": yaw_moment_data_at_straight[
                 f"Control Moment Index [{self.units['Moment']}/{self.units['Angle']}]   [∂CN/∂δ]"
             ],
@@ -821,7 +833,6 @@ class YawMomentAnalysis(YawMomentConvertData):
         )
         lateral_acceleration = self.yaw_moment_data[f"Lateral Acceleration [{self.units['Acceleration']}]"]
 
-
         pos_moment_index = 0
         neg_moment_index = 0
         combined_max_accel = 0
@@ -836,7 +847,9 @@ class YawMomentAnalysis(YawMomentConvertData):
                 neg_moment_index = index if yaw_moment <= 0 else neg_moment_index
                 if yaw_moment > 0:
                     pos_moment_index = index
-                    combined_accel = lateral_acceleration.loc[neg_moment_index] + lateral_acceleration.loc[pos_moment_index]
+                    combined_accel = (
+                        lateral_acceleration.loc[neg_moment_index] + lateral_acceleration.loc[pos_moment_index]
+                    )
                     if combined_accel > combined_max_accel:
                         combined_max_accel = combined_accel
                         max_accel_w_neg_moment_index = neg_moment_index
@@ -868,7 +881,9 @@ class YawMomentAnalysis(YawMomentConvertData):
                 neg_moment_index = index if yaw_moment <= 0 else neg_moment_index
                 if yaw_moment > 0:
                     pos_moment_index = index
-                    combined_accel = lateral_acceleration.loc[neg_moment_index] + lateral_acceleration.loc[pos_moment_index]
+                    combined_accel = (
+                        lateral_acceleration.loc[neg_moment_index] + lateral_acceleration.loc[pos_moment_index]
+                    )
                     if combined_accel > combined_max_accel:
                         combined_max_accel = combined_accel
                         max_accel_w_neg_moment_index = neg_moment_index
@@ -920,15 +935,15 @@ class YawMomentAnalysis(YawMomentConvertData):
 
 
 class YawMomentPlotting(YawMomentAnalysis):
-    #TODO: THISS ENTIRE CLASS NEEDS YEETING, JUST START FRESH...
+    # TODO: THISS ENTIRE CLASS NEEDS YEETING, JUST START FRESH...
 
     @staticmethod
-    def _get_colormap(num_lines: int, colour_map: str) -> list[str]:
+    def _get_colormap(num_lines: int, colour_map: str, low_val: float = 0, hi_val: float = 1) -> list[str]:
         """Get list of colours so that bestfits lines are matched with data lines"""
 
-        cnorm = colors.Normalize(0, num_lines - 1)
+        cnorm = colors.Normalize(low_val, hi_val)
         cmap = cm.ScalarMappable(norm=cnorm, cmap=cm.get_cmap(colour_map))
-        return [colors.rgb2hex(colour, True) for colour in cmap.to_rgba(range(num_lines))]
+        return [colors.rgb2hex(colour, True) for colour in cmap.to_rgba(np.linspace(low_val, hi_val, num_lines), norm=False)]
 
     @classmethod
     def simple_yaw_moment_diagram(
@@ -938,7 +953,7 @@ class YawMomentPlotting(YawMomentAnalysis):
         to_normalized: bool = False,
         to_deg: bool = False,
         to_kph: bool = False,
-        to_save: bool = False
+        to_save: bool = False,
     ):
         # plt.style.use("dark_background")
         units = {
@@ -952,22 +967,88 @@ class YawMomentPlotting(YawMomentAnalysis):
         if data_units != units:
             cls.convert_yaw_moment_data(yaw_moment_data, car, to_deg, to_normalized)
 
-        figure, axes = plt.subplots(nrows=1, ncols=1)
-
         list_of_const_slip_line_data = cls.extract_const_slip_lines(yaw_moment_data=yaw_moment_data, units=units)
         list_of_const_steer_line_data = cls.extract_const_steer_lines(yaw_moment_data=yaw_moment_data, units=units)
 
+        yaw_moment_analysis = YawMomentAnalysis(
+            yaw_moment_data=yaw_moment_data, car=car, to_deg=to_deg, to_normalized=to_normalized
+        )
+        yaw_moment_data = yaw_moment_analysis.yaw_moment_data
+
+        x = yaw_moment_data[f"Lateral Acceleration [{units['Acceleration']}]"]
+        y = yaw_moment_data[f"Yaw Moment [{units['Moment']}]"]
+        z = yaw_moment_data[f"Static Directional Stability [{units['Moment']}/{units['Angle']}]   [∂CN/∂ß]"]
+
+        yaw_moment_data.sort_values([
+                                        # f"Lateral Acceleration [{units['Acceleration']}]",
+                                        # f"Yaw Moment [{units['Moment']}]",
+                                        f"Stability Index [{units['Moment']}/{units['Acceleration']}] [∂CN/∂Ay]",
+                                    ],
+                                    inplace=True,
+                                    )
+
+        yaw_moment_data.sort_values(
+            [ f"Steering Wheel Angle [{units[ 'Angle' ]}]", f"Chassis Slip Angle [{units[ 'Angle' ]}]" ], inplace=True
+        )
+
+        colours = px.colors.sample_colorscale(colorscale="Reds",
+                                              samplepoints=1 + len(yaw_moment_data[
+                                                                       f"Steering Wheel Angle [{units[ 'Angle' ]}]" ].unique()),
+                                              low=0.25
+                                              )
+        fig5 = px.line(data_frame=yaw_moment_data,
+                       x=f"Lateral Acceleration [{units[ 'Acceleration' ]}]",
+                       y=f"Yaw Moment [{units['Moment']}]",
+                       line_group=f"Steering Wheel Angle [{units[ 'Angle' ]}]",
+                       color=f"Steering Wheel Angle [{units[ 'Angle' ]}]",
+                       color_discrete_sequence=colours,
+                       line_shape='spline',
+                       )
+
+        yaw_moment_data.sort_values(
+            [f"Chassis Slip Angle [{units['Angle']}]", f"Steering Wheel Angle [{units['Angle']}]"], inplace=True
+        )
+        colours = px.colors.sample_colorscale(colorscale="Blues",
+                                              samplepoints=1 + len(yaw_moment_data[f"Steering Wheel Angle [{units['Angle']}]"].unique()),
+                                              low=0.25
+                                              )
+        fig5.add_traces(
+            list(px.line(data_frame=yaw_moment_data,
+                         x=f"Lateral Acceleration [{units['Acceleration']}]",
+                         y=f"Yaw Moment [{units['Moment']}]",
+                         line_group=f"Chassis Slip Angle [{units['Angle']}]",
+                         color=f"Chassis Slip Angle [{units['Angle']}]",
+                         color_discrete_sequence=colours,
+                         line_shape='spline',
+                         # labels={f"Chassis Slip Angle [{units['Angle']}]": "Chassis Slip Angle",
+                         #         f"Steering Wheel Angle [{units['Angle']}]": "Steering Wheel Angle"}
+                         ).select_traces()),
+
+        )
+
+        fig5.show()
+
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111)
+
+        plt.tricontourf(x, y, z, cmap=cm.cividis)
+        plt.colorbar()
+
         # TODO: Break out function for plotting these
-        colours = cls._get_colormap(num_lines=len(list_of_const_steer_line_data), colour_map='winter')
+        colours = cls._get_colormap(num_lines=len(list_of_const_steer_line_data),
+                                    colour_map="Blues",
+                                    low_val=0.25,
+                                    hi_val=0.75,
+                                    )
         chassis_slip_max = yaw_moment_data[f"Chassis Slip Angle [{units['Angle']}]"].max()
         for colour, const_slip_line_data in zip(colours, list_of_const_slip_line_data):
-        # for const_slip_line_data in list_of_const_slip_line_data:
-            (line,) = axes.plot(
+            # for const_slip_line_data in list_of_const_slip_line_data:
+            (line,) = ax.plot(
                 const_slip_line_data[f"Lateral Acceleration [{units['Acceleration']}]"],
                 const_slip_line_data[f"Yaw Moment [{units['Moment']}]"],
                 color=colour,
                 # color='b',
-                linewidth=2.5,
+                linewidth=2.25,
             )
             chassis_slip = const_slip_line_data[f"Chassis Slip Angle [{units['Angle']}]"].max()
             line.set_label(f"Chassis {chassis_slip: .0f}°")
@@ -976,26 +1057,30 @@ class YawMomentPlotting(YawMomentAnalysis):
             #         f"Constant Chassis Slip Angle (±{chassis_slip: {angle_decimals_format_str}}{units['Angle']})"
             #     )
 
-        colours = cls._get_colormap(num_lines=len(list_of_const_steer_line_data), colour_map='autumn')
+        colours = cls._get_colormap(num_lines=len(list_of_const_steer_line_data),
+                                    colour_map="Reds",
+                                    low_val=0.25,
+                                    hi_val=0.85,
+                                    )
         steer_max = yaw_moment_data[f"Steering Wheel Angle [{units['Angle']}]"].max()
         for colour, const_steer_line_data in zip(colours, list_of_const_steer_line_data):
-        # for const_steer_line_data in list_of_const_steer_line_data:
+            # for const_steer_line_data in list_of_const_steer_line_data:
             # const_steer_line_data = const_steer_line_data.sort_values(f"Chassis Slip Angle [{units['Angle']}]")
             steer_angle = const_steer_line_data[f"Steering Wheel Angle [{units['Angle']}]"].max()
-            (line,) = axes.plot(
+            (line,) = ax.plot(
                 const_steer_line_data[f"Lateral Acceleration [{units['Acceleration']}]"],
                 const_steer_line_data[f"Yaw Moment [{units['Moment']}]"],
                 color=colour,
                 # color='r',
-                linewidth=2.5,
+                linewidth=2.25,
             )
             line.set_label(f"Steer {steer_angle: .0f}°")
             # if steer_angle == steer_max:
             #     line.set_label(
             #         f"Constant Steering Wheel Angle (±{steer_angle: {angle_decimals_format_str}}{units['Angle']})"
             #     )
-        axes.axhline(0, color="gray", linewidth=0.7)
-        axes.axvline(0, color="gray", linewidth=0.7)
+        ax.axhline(0, color="gray", linewidth=1)
+        ax.axvline(0, color="gray", linewidth=1)
 
         speed_mps = yaw_moment_data["Velocity [m/s]"].iloc[-1]
         speed_units = "km/h" if to_kph else "m/s"
@@ -1008,10 +1093,10 @@ class YawMomentPlotting(YawMomentAnalysis):
         plt.grid(which="major", linewidth=0.4)
 
         # FOR DEBUGGING
-        box = axes.get_position()
-        axes.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        # box = ax.get_position()
+        # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         # Put a legend to the right of the current axis
-        axes.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.legend(loc="center", bbox_to_anchor=(1.25, 0.5))
 
         # plt.legend(loc="upper right")
 
@@ -1036,22 +1121,19 @@ class YawMomentPlotting(YawMomentAnalysis):
         x_axis_metric_formatted = cls.format_heading_string(x_axis_metric)
 
         # # TODO: I'm desperate right now but this needs fixing.... ugh
-        y_limits_accel = {
-            "Limit": [1.72, 1.9],
-            "Trimmed Limit": [1.4, 1.72]
-        }
+        y_limits_accel = {"Limit": [1.72, 1.9], "Trimmed Limit": [1.4, 1.72]}
         y_limits_moment = {
             "Limit": [1.72, 1.9],
         }
         y_limits_control = {
             # "Limit": [1.72, 1.9],
             "Trimmed Limit": np.rad2deg([-0.0016, 0.5]),
-            "Straight": np.rad2deg([-0.017, 0.1])
+            "Straight": np.rad2deg([-0.017, 0.1]),
         }
         y_limits_stability = {
             # "Limit": [1.72, 1.9],
             "Trimmed Limit": [3.394, 3.72],
-            "Straight": [20.85, 21.49]
+            "Straight": [20.85, 21.49],
         }
 
         # sort and filter data
@@ -1108,7 +1190,6 @@ class YawMomentPlotting(YawMomentAnalysis):
                 plt.autoscale()
             if y_axis_metric == f"Static Directional Stability [{units['Moment']}/{units['Angle']}]   [∂CN/∂ß]":
                 plt.ylim(y_limits_stability[key_point])
-
 
             if x_axis_metric == "Velocity [m/s]":
                 plt.xlabel(x_axis_metric)
@@ -1278,7 +1359,7 @@ def sweep_car_param_yaw_moment(
         # YawMomentPlotting.simple_yaw_moment_diagram(
         #     yaw_moment_data=ymd_data, car=car, to_deg=True, to_normalized=True, to_kph=True
         # )
-        #END DEBUGGING CODE
+        # END DEBUGGING CODE
 
         yaw_moment_analysis = YawMomentAnalysis(
             yaw_moment_data=ymd_data, car=test_car, to_deg=to_deg, to_normalized=to_normalized
@@ -1310,7 +1391,7 @@ def create_single_yaw_diagram(car: VehicleParameters, save_data: bool = False):
     data_at_key_points = yaw_moment_analysis.yaw_moment_data_at_key_points()
     performance_indicators = yaw_moment_analysis.key_performance_indicators(key_point_data=data_at_key_points)
 
-    print('\n\n')
+    print("\n\n")
     for key, value in performance_indicators.items():
         value = np.round(value, decimals=4)
         print("\t\t\t\t\t{:<35} {:<10}".format(key, value))
@@ -1328,43 +1409,43 @@ if __name__ == "__main__":
     # Uncomment for single yaw moment calc
     create_single_yaw_diagram(car=car, save_data=False)
 
-    # Uncomment for yaw moment parameter sweep
-    limits = VehicleSweepLimits()
+    # # Uncomment for yaw moment parameter sweep
+    # limits = VehicleSweepLimits()
+    # #
+    # start_time = perf_counter()
+    # to_deg = False
+    # to_normalized = True
     #
-    start_time = perf_counter()
-    to_deg = False
-    to_normalized = True
-
-    key_point_param_sweep_data = df()
-    parameters = []
-    for param in limits.__dir__():
-        if "__" not in param:
-            parameters.append(param)
-    # parameters = ["static_toe_fl_rad"]
-    for param in parameters:
-        key_point_param_sweep_data_new = sweep_car_param_yaw_moment(
-            car=car,
-            car_sweep_parameter=param,
-            car_sweep_parameter_limits=limits.__getattribute__(param),
-            car_sweep_steps=22,
-            speed_kph=60,
-            to_deg=to_deg,
-            to_normalized=to_normalized,
-        )
-        # TODO: add more data to dataframe (car sweep parameters) to do a proper hyperparameter study
-        #  in future. Can save this data and use it in the future
-        # concat([key_point_param_sweep_data, key_point_param_sweep_data_new], axis=0, ignore_index=True)
-        for point in ["Limit", "Trimmed Limit", "Straight"]:
-            YawMomentPlotting.plot_sweep_at_key_point(
-                key_metric_data=key_point_param_sweep_data_new,
-                key_point=point,
-                x_axis_metric=param,
-                to_save_plot=True,
-                to_plot=False,
-                single_y_metric=None,
-                is_normalized=to_normalized,
-            )
-
+    # key_point_param_sweep_data = df()
+    # parameters = []
+    # for param in limits.__dir__():
+    #     if "__" not in param:
+    #         parameters.append(param)
+    # # parameters = ["static_toe_fl_rad"]
+    # for param in parameters:
+    #     key_point_param_sweep_data_new = sweep_car_param_yaw_moment(
+    #         car=car,
+    #         car_sweep_parameter=param,
+    #         car_sweep_parameter_limits=limits.__getattribute__(param),
+    #         car_sweep_steps=22,
+    #         speed_kph=60,
+    #         to_deg=to_deg,
+    #         to_normalized=to_normalized,
+    #     )
+    #     # TODO: add more data to dataframe (car sweep parameters) to do a proper hyperparameter study
+    #     #  in future. Can save this data and use it in the future
+    #     # concat([key_point_param_sweep_data, key_point_param_sweep_data_new], axis=0, ignore_index=True)
+    #     for point in ["Limit", "Trimmed Limit", "Straight"]:
+    #         YawMomentPlotting.plot_sweep_at_key_point(
+    #             key_metric_data=key_point_param_sweep_data_new,
+    #             key_point=point,
+    #             x_axis_metric=param,
+    #             to_save_plot=True,
+    #             to_plot=False,
+    #             single_y_metric=None,
+    #             is_normalized=to_normalized,
+    #         )
+    #
 
     # speed_range_kph = (30, 120)
     # key_point_param_sweep_data = sweep_speed_yaw_moment(car=car,
@@ -1392,6 +1473,6 @@ if __name__ == "__main__":
     # TODO: replace lists with tuples where possible for increase in speed -> easier to iterate through
     # TODO: remove as many '.' operations as possible. Import individual methods
 
-printy("\n\n\n\t\t\t▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬", colour="turquoise")
-printy("\t\t\t\t\t\t\t\t\t☻ SWEEPS DONE ☻", colour="turquoise")
-printy("\t\t\t▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n\n", colour="turquoise")
+    printy("\n\n\n\t\t\t▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬", colour="turquoise")
+    printy("\t\t\t\t\t\t\t\t\t☻ SWEEPS DONE ☻", colour="turquoise")
+    printy("\t\t\t▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬", colour="turquoise")
