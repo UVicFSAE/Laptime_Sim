@@ -531,7 +531,7 @@ class VehicleSweepLimits:
     static_toe_rl_rad = deg2rad([-3, 3])
 
     tire_pressure_f_pa = UnitConversion.psi_to_pa([8, 14])
-    tire_pressure_r_pa =  UnitConversion.psi_to_pa([8, 14])
+    tire_pressure_r_pa = UnitConversion.psi_to_pa([8, 14])
 
     # aero_installed = [False, True]
     aero_balance_f = [0.4, 0.6]

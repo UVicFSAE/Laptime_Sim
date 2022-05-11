@@ -221,7 +221,7 @@ class MagicFormula(ABC):
     QDZ7: float  # Variation of peak factor Dmr" with load
     QDZ8: float  # Variation of peak factor Dmr" with inclination_angle
     QDZ9: float  # Variation of peak factor Dmr" with inclination_angle and load
-    QDZ10: float  # Variation of peak factor Dmr with inclination_angle squared
+    QDZ10: float  # Variationof peak factor Dmr with inclination_angle squared
     QDZ11: float  # Variation of Dmr with inclination_angle squared and load
     QEZ1: float  # Trail curvature Ept at Fznom
     QEZ2: float  # Variation of curvature Ept with load

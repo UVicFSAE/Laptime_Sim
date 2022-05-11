@@ -991,48 +991,49 @@ class YawMomentPlotting(YawMomentAnalysis):
             [ f"Steering Wheel Angle [{units[ 'Angle' ]}]", f"Chassis Slip Angle [{units[ 'Angle' ]}]" ], inplace=True
         )
 
-        colours = px.colors.sample_colorscale(colorscale="Reds",
-                                              samplepoints=1 + len(yaw_moment_data[
-                                                                       f"Steering Wheel Angle [{units[ 'Angle' ]}]" ].unique()),
-                                              low=0.25
-                                              )
-        fig5 = px.line(data_frame=yaw_moment_data,
-                       x=f"Lateral Acceleration [{units[ 'Acceleration' ]}]",
-                       y=f"Yaw Moment [{units['Moment']}]",
-                       line_group=f"Steering Wheel Angle [{units[ 'Angle' ]}]",
-                       color=f"Steering Wheel Angle [{units[ 'Angle' ]}]",
-                       color_discrete_sequence=colours,
-                       line_shape='spline',
-                       )
-
-        yaw_moment_data.sort_values(
-            [f"Chassis Slip Angle [{units['Angle']}]", f"Steering Wheel Angle [{units['Angle']}]"], inplace=True
-        )
-        colours = px.colors.sample_colorscale(colorscale="Blues",
-                                              samplepoints=1 + len(yaw_moment_data[f"Steering Wheel Angle [{units['Angle']}]"].unique()),
-                                              low=0.25
-                                              )
-        fig5.add_traces(
-            list(px.line(data_frame=yaw_moment_data,
-                         x=f"Lateral Acceleration [{units['Acceleration']}]",
-                         y=f"Yaw Moment [{units['Moment']}]",
-                         line_group=f"Chassis Slip Angle [{units['Angle']}]",
-                         color=f"Chassis Slip Angle [{units['Angle']}]",
-                         color_discrete_sequence=colours,
-                         line_shape='spline',
-                         # labels={f"Chassis Slip Angle [{units['Angle']}]": "Chassis Slip Angle",
-                         #         f"Steering Wheel Angle [{units['Angle']}]": "Steering Wheel Angle"}
-                         ).select_traces()),
-
-        )
-
-        fig5.show()
+        # colours = px.colors.sample_colorscale(colorscale="Reds",
+        #                                       samplepoints=1 + len(yaw_moment_data[
+        #                                                                f"Steering Wheel Angle [{units[ 'Angle' ]}]" ].unique()),
+        #                                       low=0.25
+        #                                       )
+        # fig5 = px.line(data_frame=yaw_moment_data,
+        #                x=f"Lateral Acceleration [{units[ 'Acceleration' ]}]",
+        #                y=f"Yaw Moment [{units['Moment']}]",
+        #                line_group=f"Steering Wheel Angle [{units[ 'Angle' ]}]",
+        #                color=f"Steering Wheel Angle [{units[ 'Angle' ]}]",
+        #                color_discrete_sequence=colours,
+        #                line_shape='spline',
+        #                )
+        #
+        # yaw_moment_data.sort_values(
+        #     [f"Chassis Slip Angle [{units['Angle']}]", f"Steering Wheel Angle [{units['Angle']}]"], inplace=True
+        # )
+        # colours = px.colors.sample_colorscale(colorscale="Blues",
+        #                                       samplepoints=1 + len(yaw_moment_data[f"Steering Wheel Angle [{units['Angle']}]"].unique()),
+        #                                       low=0.25
+        #                                       )
+        # fig5.add_traces(
+        #     list(px.line(data_frame=yaw_moment_data,
+        #                  x=f"Lateral Acceleration [{units['Acceleration']}]",
+        #                  y=f"Yaw Moment [{units['Moment']}]",
+        #                  line_group=f"Chassis Slip Angle [{units['Angle']}]",
+        #                  color=f"Chassis Slip Angle [{units['Angle']}]",
+        #                  color_discrete_sequence=colours,
+        #                  line_shape='spline',
+        #                  # labels={f"Chassis Slip Angle [{units['Angle']}]": "Chassis Slip Angle",
+        #                  #         f"Steering Wheel Angle [{units['Angle']}]": "Steering Wheel Angle"}
+        #                  ).select_traces()),
+        #
+        # )
+        #
+        # fig5.show()
 
         fig = plt.figure(figsize=(10, 8))
         ax = fig.add_subplot(111)
 
-        plt.tricontourf(x, y, z, cmap=cm.cividis)
-        plt.colorbar()
+        plt.tricontourf(x, y, z, 100, cmap=cm.cividis)
+        cbar = plt.colorbar()
+        cbar.set_label(f"Static Directional Stability [{units['Moment']}/{units['Angle']}]   [∂CN/∂ß]", rotation=270)
 
         # TODO: Break out function for plotting these
         colours = cls._get_colormap(num_lines=len(list_of_const_steer_line_data),
@@ -1048,14 +1049,14 @@ class YawMomentPlotting(YawMomentAnalysis):
                 const_slip_line_data[f"Yaw Moment [{units['Moment']}]"],
                 color=colour,
                 # color='b',
-                linewidth=2.25,
+                linewidth=2,
             )
             chassis_slip = const_slip_line_data[f"Chassis Slip Angle [{units['Angle']}]"].max()
-            line.set_label(f"Chassis {chassis_slip: .0f}°")
+            # line.set_label(f"Chassis {chassis_slip: .0f}°")
             # if chassis_slip == chassis_slip_max:
-            #     line.set_label(
-            #         f"Constant Chassis Slip Angle (±{chassis_slip: {angle_decimals_format_str}}{units['Angle']})"
-            #     )
+        line.set_label(
+            f"Constant Chassis Slip Angle (±{chassis_slip_max: {angle_decimals_format_str}}{units['Angle']})"
+        )
 
         colours = cls._get_colormap(num_lines=len(list_of_const_steer_line_data),
                                     colour_map="Reds",
@@ -1072,13 +1073,13 @@ class YawMomentPlotting(YawMomentAnalysis):
                 const_steer_line_data[f"Yaw Moment [{units['Moment']}]"],
                 color=colour,
                 # color='r',
-                linewidth=2.25,
+                linewidth=2,
             )
-            line.set_label(f"Steer {steer_angle: .0f}°")
+            # line.set_label(f"Steer {steer_angle: .0f}°")
             # if steer_angle == steer_max:
-            #     line.set_label(
-            #         f"Constant Steering Wheel Angle (±{steer_angle: {angle_decimals_format_str}}{units['Angle']})"
-            #     )
+        line.set_label(
+            f"Constant Steering Wheel Angle (±{steer_max: {angle_decimals_format_str}}{units['Angle']})"
+        )
         ax.axhline(0, color="gray", linewidth=1)
         ax.axvline(0, color="gray", linewidth=1)
 
@@ -1096,9 +1097,9 @@ class YawMomentPlotting(YawMomentAnalysis):
         # box = ax.get_position()
         # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         # Put a legend to the right of the current axis
-        ax.legend(loc="center", bbox_to_anchor=(1.25, 0.5))
+        # ax.legend(loc="center", bbox_to_anchor=(1.25, 0.5))
 
-        # plt.legend(loc="upper right")
+        ax.legend(loc="upper right")
 
         plt.autoscale()
         mng = plt.get_current_fig_manager()
@@ -1304,7 +1305,7 @@ def sweep_speed_yaw_moment(
             chassis_slip_angle_limit_deg=5,
             chassis_slip_steps=32,
             steering_wheel_angle_limit_deg=60,
-            lat_accel_tolerance_mps2=0.000001,
+            lat_accel_tolerance_mps2=0.0000001,
             relaxation_parameter=0.6,
             steering_steps=32,
             to_normal_distr_steer=False,
@@ -1377,17 +1378,22 @@ def create_single_yaw_diagram(car: VehicleParameters, save_data: bool = False):
     ymd = YawMomentDiagram(
         car=car,
         speed_kph=60,
-        chassis_slip_angle_limit_deg=5,
-        chassis_slip_steps=16,
+        chassis_slip_angle_limit_deg=6,
+        chassis_slip_steps=32,
         steering_wheel_angle_limit_deg=60,
-        lat_accel_tolerance_mps2=0.000010,
-        relaxation_parameter=0.7,
-        steering_steps=16,
-        to_normal_distr_steer=True,
+        lat_accel_tolerance_mps2=0.0000001,
+        relaxation_parameter=0.65,
+        steering_steps=32,
+        to_normal_distr_steer=False,
         assume_symmetric_results=False,
     )
+
+    start_time = perf_counter()
     ymd_data = ymd.yaw_moment_calc_iso(car=car)
     yaw_moment_analysis = YawMomentAnalysis(yaw_moment_data=ymd_data, car=car, to_deg=True, to_normalized=True)
+    # DEBUGGING
+    print(f"One YMD took {perf_counter() - start_time: .3f} seconds to calculate, including KPI")
+
     data_at_key_points = yaw_moment_analysis.yaw_moment_data_at_key_points()
     performance_indicators = yaw_moment_analysis.key_performance_indicators(key_point_data=data_at_key_points)
 

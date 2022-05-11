@@ -45,6 +45,16 @@ In the future, this module is likely to change significantly to accommodate GUI 
 
 # TODO: Module could use a fairly major refactor, kind of gross as it is
 #  - Relies to heavily on a perfectly formatted excel workbook
+#  - should be easy enough to modify for GUI implementation
+#  - Could also consider some kind of API to make automatic importing easier, or integrate directly with lotus
+
+# TODO: Save kinematic fits somewhere, somehow (JSON?) for use in future sims
+#  - No need to import and fit kinematics every time
+
+# TODO: Explore using interpolation instead if calculation times are a concern
+#  - Careful, this may depend on kinematic table fidelity
+#       -> larger tables could be slower even if interpolation is faster for current tables
+#  - Could also be improved using numba jit compiler (will need a lot of refactoring)
 
 
 @dataclass

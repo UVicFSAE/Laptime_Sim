@@ -32,12 +32,8 @@ def lateral_load_transfer_left_calculation(lat_accel_mps2: float, car: VehiclePa
 
 
 def wheel_load_check(wheel_load_l_n: float, wheel_load_r_n: float) -> tuple[float, float]:
-    if wheel_load_l_n < 0:
-        # wheel_load_r_n -= wheel_load_l_n
-        wheel_load_l_n = 0
-    if wheel_load_r_n < 0:
-        # wheel_load_l_n -= wheel_load_r_n
-        wheel_load_r_n = 0
+    wheel_load_l_n = max(wheel_load_l_n, 0)
+    wheel_load_r_n = max(wheel_load_r_n, 0)
     return wheel_load_l_n, wheel_load_r_n
 
 
@@ -88,5 +84,7 @@ def roll_center_height_m(roll_center_gain: float, bump_m: float, static_roll_cen
 if __name__ == "__main__":
     car = VehicleParameters()
     transfer_f_n, transfer_r_n = lateral_load_transfer_left_calculation(lat_accel_mps2=2*9.81, car=car)
-    print(f'transfer front = {transfer_f_n} N \n'
-          f'transfer rear = {transfer_r_n} N')
+    print(f'static wheel load front = {car.static_wheel_load_f_n: .2f} N \t'
+          f'static wheel load rear = {car.static_wheel_load_r_n: .2f} N \n'
+          f'         transfer front = {-transfer_f_n: .2f} N \t '
+          f'        transfer rear = {-transfer_r_n: .2f} N')
